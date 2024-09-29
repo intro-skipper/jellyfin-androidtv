@@ -31,6 +31,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.leanback.app.RowsSupportFragment;
 import androidx.leanback.widget.ArrayObjectAdapter;
 import androidx.leanback.widget.HeaderItem;
@@ -65,6 +66,7 @@ import org.jellyfin.androidtv.ui.livetv.TvManager;
 import org.jellyfin.androidtv.ui.navigation.Destinations;
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository;
 import org.jellyfin.androidtv.ui.playback.overlay.LeanbackOverlayFragment;
+import org.jellyfin.androidtv.ui.playback.segmentskip.SegmentSkipFragment;
 import org.jellyfin.androidtv.ui.presentation.CardPresenter;
 import org.jellyfin.androidtv.ui.presentation.ChannelCardPresenter;
 import org.jellyfin.androidtv.ui.presentation.MutableObjectAdapter;
@@ -92,6 +94,9 @@ import java.util.List;
 import java.util.UUID;
 
 import kotlin.Lazy;
+import kotlin.coroutines.Continuation;
+import kotlin.coroutines.CoroutineContext;
+import kotlinx.coroutines.Dispatchers;
 import timber.log.Timber;
 
 public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGuide, View.OnKeyListener {
@@ -132,6 +137,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
     private boolean mFadeEnabled = false;
     private boolean mIsVisible = false;
     private boolean mPopupPanelVisible = false;
+    private SegmentSkipFragment mSegmentSkipFragment;
     private boolean navigating = false;
 
     private LeanbackOverlayFragment leanbackOverlayFragment;
@@ -246,6 +252,8 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
         if (playbackControllerContainer.getValue().getPlaybackController() != null) {
             playbackControllerContainer.getValue().getPlaybackController().init(new VideoManager((requireActivity()), view, helper), this);
         }
+
+        initSegmentSkip();
     }
 
     @Override
@@ -1306,9 +1314,45 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
         });
     }
 
+    private void initSegmentSkip() {
+        mSegmentSkipFragment = new SegmentSkipFragment();
+
+        FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
+        transaction.add(R.id.container, mSegmentSkipFragment, null);
+        transaction.commit();
+    }
+
+    private void destroySegmentSkip() {
+        if (mSegmentSkipFragment == null) return;
+
+        FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
+        transaction.remove(mSegmentSkipFragment);
+        transaction.commit();
+    }
+
+    public void handleProgress(long currentPosition) {
+        mSegmentSkipFragment.handleProgress(currentPosition);
+    }
+
+    public void onStartItem(BaseItemDto item) {
+        mSegmentSkipFragment.onStartItem(item, new Continuation<Object>() {
+            @Override
+            @NonNull
+            public CoroutineContext getContext() {
+                return Dispatchers.getDefault();
+            }
+
+            @Override
+            public void resumeWith(@NonNull Object o) {
+            }
+        });
+    }
+
     public void closePlayer() {
         if (navigating) return;
         navigating = true;
+
+        destroySegmentSkip();
 
         if (navigationRepository.getValue().getCanGoBack()) {
             navigationRepository.getValue().goBack();
