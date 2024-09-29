@@ -15,7 +15,7 @@ android {
 		targetSdk = libs.versions.android.targetSdk.get().toInt()
 
 		// Release version
-		applicationId = namespace
+		applicationId = "com.brewkunz.jellyfin"
 		versionName = project.getVersionName()
 		versionCode = getVersionCode(versionName!!)
 		setProperty("archivesBaseName", "jellyfin-androidtv-v$versionName")
@@ -110,6 +110,7 @@ dependencies {
 	// Kotlin
 	implementation(libs.kotlinx.coroutines)
 	implementation(libs.kotlinx.serialization.json)
+	implementation(libs.kotlinx.coroutines.core)
 
 	// Android(x)
 	implementation(libs.androidx.core)

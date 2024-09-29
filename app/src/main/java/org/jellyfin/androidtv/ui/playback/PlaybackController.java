@@ -638,6 +638,7 @@ public class PlaybackController implements PlaybackControllerNotifiable {
             mVideoManager.setPlaybackSpeed(isLiveTv() ? 1.0f : mRequestedPlaybackSpeed);
 
         if (mFragment != null) mFragment.updateDisplay();
+        if (mFragment != null) mFragment.onStartItem(item);
 
         if (mVideoManager != null) {
             mVideoManager.setVideoPath(response.getMediaUrl());
@@ -1282,8 +1283,10 @@ public class PlaybackController implements PlaybackControllerNotifiable {
             if (mFragment != null && finishedInitialSeek)
                 mFragment.updateSubtitles(mCurrentPosition);
         }
-        if (mFragment != null)
+        if (mFragment != null) {
+            mFragment.handleProgress(mCurrentPosition);
             mFragment.setCurrentTime(mCurrentPosition);
+        }
     }
 
     public long getDuration() {
