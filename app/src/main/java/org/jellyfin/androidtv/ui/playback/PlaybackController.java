@@ -630,13 +630,14 @@ public class PlaybackController implements PlaybackControllerNotifiable {
         }
 
         // set playback speed to user selection, or 1 if we're watching live-tv
-        if (mVideoManager != null)
-            mVideoManager.setPlaybackSpeed(isLiveTv() ? 1.0f : mRequestedPlaybackSpeed);
-
-        if (mFragment != null) mFragment.updateDisplay();
-
         if (mVideoManager != null) {
+            mVideoManager.setPlaybackSpeed(isLiveTv() ? 1.0f : mRequestedPlaybackSpeed);
             mVideoManager.setVideoPath(response.getMediaUrl());
+        }
+
+        if (mFragment != null) {
+            mFragment.updateDisplay();
+            mFragment.onStartItem(item);
         }
 
         //wait a beat before attempting to start so the player surface is fully initialized and video is ready
@@ -1225,8 +1226,10 @@ public class PlaybackController implements PlaybackControllerNotifiable {
                 }
             }
         }
-        if (mFragment != null)
+        if (mFragment != null) {
+            mFragment.handleProgress(mCurrentPosition);
             mFragment.setCurrentTime(mCurrentPosition);
+        }
     }
 
     public long getDuration() {

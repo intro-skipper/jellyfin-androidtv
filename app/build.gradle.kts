@@ -33,6 +33,7 @@ android {
 
 	buildTypes {
 		val release by getting {
+			applicationIdSuffix = ".iskip"
 			isMinifyEnabled = false
 
 			// Set package names used in various XML files
@@ -110,6 +111,7 @@ dependencies {
 	// Kotlin
 	implementation(libs.kotlinx.coroutines)
 	implementation(libs.kotlinx.serialization.json)
+	implementation(libs.kotlinx.coroutines.core)
 
 	// Android(x)
 	implementation(libs.androidx.core)
