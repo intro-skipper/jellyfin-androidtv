@@ -14,6 +14,9 @@ import org.jellyfin.sdk.model.UUID
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.koin.android.ext.android.inject
 
+val Number.millis
+    get() = this * 1000
+
 class SegmentSkipFragment() : Fragment() {
 
 	private val api: ApiClient by inject()
@@ -41,7 +44,7 @@ class SegmentSkipFragment() : Fragment() {
 
 	private fun buttonClicked() {
 		lastSegment?.let { segment ->
-			playbackControllerContainer.playbackController?.seek((segment.endTime * 1000).toLong())
+			playbackControllerContainer.playbackController?.seek((segment.endTime.millis).toLong())
 		}
 	}
 
@@ -49,14 +52,14 @@ class SegmentSkipFragment() : Fragment() {
 		val currentSegment = getCurrentSegment(currentPosition) ?: lastSegment ?: return
 		lastSegment = currentSegment
 
-		if (currentPosition >= currentSegment.showAt * 1000 && currentPosition < currentSegment.hideAt * 1000 &&
+		if (currentPosition >= currentSegment.showAt.millis && currentPosition < currentSegment.hideAt.millis &&
 			button.visibility != View.VISIBLE
 		) {
 			button.visibility = View.VISIBLE
 			button.requestFocus()
 		}
 
-		if ((currentPosition < currentSegment.showAt * 1000 || currentPosition >= currentSegment.hideAt * 1000) &&
+		if ((currentPosition < currentSegment.showAt.millis || currentPosition >= currentSegment.hideAt.millis) &&
 			button.visibility == View.VISIBLE
 		) {
 			button.visibility = View.GONE
@@ -87,7 +90,7 @@ class SegmentSkipFragment() : Fragment() {
 
 	private fun getCurrentSegment(currentPosition: Long): SegmentModel? {
 		return segments?.firstOrNull {
-			currentPosition >= it.startTime * 1000 && currentPosition < it.endTime * 1000
+			currentPosition >= it.startTime.millis && currentPosition < it.endTime.millis
 		}
 	}
 }
