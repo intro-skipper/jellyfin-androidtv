@@ -21,6 +21,7 @@ jobs:
         uses: gradle/actions/wrapper-validation@d156388eb19639ec20ade50009f3d199ce1e2808 # v4.1.0
   lint:
     name: Lint
+    needs: validate
     runs-on: self-hosted
     steps:
       - name: Checkout repository
@@ -41,6 +42,7 @@ jobs:
           sarif_file: .
   test:
     name: Test
+    needs: validate
     runs-on: self-hosted
     steps:
       - name: Checkout repository
