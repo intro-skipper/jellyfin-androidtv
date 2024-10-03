@@ -48,6 +48,15 @@ class SegmentSkipFragment() : Fragment() {
 		}
 	}
 
+	private fun updateButtonText(segment: SegmentModel) {
+		val textResId = when (segment.type) {
+			SegmentType.INTRO -> "Skip Intro"
+			SegmentType.CREDITS -> "Skip Credits"
+			else -> "Skip"
+		}
+		button.setText(textResId)
+	}
+
 	fun handleProgress(currentPosition: Long) {
 		val currentSegment = getCurrentSegment(currentPosition) ?: lastSegment ?: return
 		lastSegment = currentSegment
@@ -56,6 +65,7 @@ class SegmentSkipFragment() : Fragment() {
 			button.visibility != View.VISIBLE
 		) {
 			button.visibility = View.VISIBLE
+			updateButtonText(currentSegment)
 			button.requestFocus()
 		}
 
