@@ -79,3 +79,10 @@ jobs:
         with:
           name: ${{ github.ref_name }}
           files: build/jellyfin-publish/*.apk
+
+      - name: Purge build cache
+        continue-on-error: true
+        uses: MyAlbum/purge-cache@v2
+        with:
+          max-age: 259200 # 3 days, default: 7 days since last use
+          token: ${{ secrets.GITHUB_TOKEN }}
