@@ -2,8 +2,10 @@ name: Intro Skipper Mod
 
 on:
   push:
-    tags:
-      - 'intro-skipper-v*'
+    branches: [ master ]
+    paths-ignore:
+      - '**/README.md'
+      - '.github/ISSUE_TEMPLATE/**'
 
 permissions: write-all
 
