@@ -24,6 +24,7 @@ class SegmentSkipFragment() : Fragment() {
 
 	private lateinit var button: Button
 	private var segments: List<SegmentModel>? = null
+	private var buttonConfig: SegmentButtonConfig? = null
 	private var lastSegment: SegmentModel? = null
 
     override fun onCreateView(
@@ -50,8 +51,8 @@ class SegmentSkipFragment() : Fragment() {
 
 	private fun updateButtonText(segment: SegmentModel) {
 		val textResId = when (segment.type) {
-			SegmentType.INTRO -> "Skip Intro"
-			SegmentType.CREDITS -> "Skip Credits"
+			SegmentType.INTRO -> buttonConfig?.skipButtonIntroText
+			SegmentType.CREDITS -> buttonConfig?.skipButtonEndCreditsText
 			else -> "Skip"
 		}
 		button.setText(textResId)
@@ -61,17 +62,15 @@ class SegmentSkipFragment() : Fragment() {
 		val currentSegment = getCurrentSegment(currentPosition) ?: lastSegment ?: return
 		lastSegment = currentSegment
 
-		if (currentPosition >= currentSegment.showAt.millis && currentPosition < currentSegment.hideAt.millis &&
-			button.visibility != View.VISIBLE
-		) {
+		val shouldShowButton = buttonConfig?.skipButtonVisible == true &&
+			currentPosition >= currentSegment.showAt.millis &&
+			currentPosition < currentSegment.hideAt.millis
+
+		if (shouldShowButton && button.visibility != View.VISIBLE) {
 			button.visibility = View.VISIBLE
 			updateButtonText(currentSegment)
 			button.requestFocus()
-		}
-
-		if ((currentPosition < currentSegment.showAt.millis || currentPosition >= currentSegment.hideAt.millis) &&
-			button.visibility == View.VISIBLE
-		) {
+		} else if (!shouldShowButton && button.visibility == View.VISIBLE) {
 			button.visibility = View.GONE
 		}
 	}
@@ -79,6 +78,13 @@ class SegmentSkipFragment() : Fragment() {
 	suspend fun onStartItem(item: BaseItemDto) {
 		button.visibility = View.GONE
 		segments = getSegments(item.id)
+		buttonConfig = getButtonConfig()
+	}
+
+	private suspend fun getButtonConfig(): SegmentButtonConfig {
+		return api.get<SegmentButtonConfig>(
+			pathTemplate = "Intros/UserInterfaceConfiguration",
+		).content
 	}
 
 	private suspend fun getSegments(itemId: UUID): List<SegmentModel> {
