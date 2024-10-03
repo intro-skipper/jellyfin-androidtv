@@ -1,15 +1,27 @@
-name: Custom App / Build
+name: Intro Skipper Mod
 
 on:
   push:
     tags:
-      - 'custom-v*'
+      - 'intro-skipper-v*'
+
+permissions: write-all
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     name: Build
     runs-on: ubuntu-24.04
     steps:
+      - name: Drop orphan tags
+        continue-on-error: true
+        uses: fabriziocacicia/delete-tags-without-release-action@v0.1.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -23,27 +35,42 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Set JELLYFIN_VERSION
-        run: echo "JELLYFIN_VERSION=$(echo ${GITHUB_REF#refs/tags/custom-v} | tr / -)" >> $GITHUB_ENV
+        run: echo "JELLYFIN_VERSION=$(echo ${GITHUB_REF#refs/tags/intro-skipper-v} | tr / -)" >> $GITHUB_ENV
 
-      - name: Assemble release file
-        run: ./gradlew assembleRelease
+      - name: Decode Keystore File
+        run: echo "${{ secrets.KEYSTORE }}" | base64 -d > $GITHUB_WORKSPACE/key.keystore
 
-      - name: Sign APK
-        id: signApk
-        uses: r0adkll/sign-android-release@v1
-        env:
-          BUILD_TOOLS_VERSION: "34.0.0"
+      - uses: burrunan/gradle-cache-action@v1
+        name: Build Release Gradle
         with:
-          releaseDirectory: app/build/outputs/apk/release
-          signingKeyBase64: ${{ secrets.KEYSTORE }}
-          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
-          alias: ${{ secrets.KEY_ALIAS }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
+          job-id: Release
+          # Specifies arguments for Gradle execution
+          arguments: |
+            --configure-on-demand
+            assembleRelease
+            -Pandroid.injected.signing.store.file=${{ github.workspace }}/key.keystore
+            -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }}
+            -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }}
+            -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
+          # Gradle version to use for execution:
+          #   wrapper (default), current, rc, nightly, release-nightly, or
+          #   versions like 6.6 (see https://services.gradle.org/versions/all)
+          gradle-version: wrapper
+          # Properties are passed as -Pname=value
+          properties: |
+            org.gradle.unsafe.configuration-cache=true
 
       - name: Prepare release archive
         run: |
           mkdir -p build/jellyfin-publish
           mv ${{ steps.signApk.outputs.signedReleaseFile }} build/jellyfin-publish/jellyfin-androidtv-v${{ env.JELLYFIN_VERSION }}-release.apk
+
+      - name: Purge past releases
+        uses: dev-drprasad/delete-older-releases@v0.3.4
+        with:
+          keep_latest: 1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
