@@ -1,0 +1,93 @@
+name: Intro Skipper Mod
+
+on:
+  push:
+    branches: [ master ]
+    paths-ignore:
+      - '**/README.md'
+      - '.github/ISSUE_TEMPLATE/**'
+
+permissions: write-all
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Drop orphan tags
+        continue-on-error: true
+        uses: fabriziocacicia/delete-tags-without-release-action@v0.1.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - id: version
+        uses: pozetroninc/github-action-get-latest-release@master
+        with:
+          owner: jellyfin
+          repo: jellyfin-androidtv
+          excludes: prerelease, draft
+
+      - name: Set JELLYFIN_VERSION
+        run: |
+          JELLYFIN_VERSION=${{ steps.version.outputs.release }}
+          echo "JELLYFIN_VERSION=${JELLYFIN_VERSION:1}" >> $GITHUB_ENV
+
+      - name: Decode Keystore File
+        run: echo "${{ secrets.KEYSTORE }}" | base64 -d > $GITHUB_WORKSPACE/key.keystore
+
+      - uses: burrunan/gradle-cache-action@v1
+        name: Build Release Gradle
+        with:
+          job-id: Release
+          # Specifies arguments for Gradle execution
+          arguments: |
+            --configure-on-demand
+            assembleRelease
+            -Pandroid.injected.signing.store.file=${{ github.workspace }}/key.keystore
+            -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }}
+            -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }}
+            -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
+          # Gradle version to use for execution:
+          #   wrapper (default), current, rc, nightly, release-nightly, or
+          #   versions like 6.6 (see https://services.gradle.org/versions/all)
+          gradle-version: wrapper
+          # Properties are passed as -Pname=value
+          properties: |
+            org.gradle.unsafe.configuration-cache=true
+
+      - name: Purge past releases
+        uses: dev-drprasad/delete-older-releases@v0.3.4
+        with:
+          keep_latest: 1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.JELLYFIN_VERSION }}
+          name: v${{ env.JELLYFIN_VERSION }}
+          files: app/build/outputs/apk/release/*.apk
+
+      - name: Purge build cache
+        continue-on-error: true
+        uses: MyAlbum/purge-cache@v2
+        with:
+          max-age: 259200 # 3 days, default: 7 days since last use
+          token: ${{ secrets.GITHUB_TOKEN }}
