@@ -1,4 +1,4 @@
-package org.jellyfin.androidtv.ui.playback.segmentskip
+package org.jellyfin.androidtv.ui.playback.segments
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
