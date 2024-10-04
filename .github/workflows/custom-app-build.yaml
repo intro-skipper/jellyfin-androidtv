@@ -2,7 +2,8 @@ name: Intro Skipper Mod
 
 on:
   push:
-    branches: [ master ]
+    branches:
+      - 'release-*'
     paths-ignore:
       - '**/README.md'
       - '.github/ISSUE_TEMPLATE/**'
@@ -43,10 +44,12 @@ jobs:
           repo: jellyfin-androidtv
           excludes: prerelease, draft
 
-      - name: Set JELLYFIN_VERSION
+      - name: Set JELLYFIN_VERSION and GIT_HASH
         run: |
           JELLYFIN_VERSION=${{ steps.version.outputs.release }}
           echo "JELLYFIN_VERSION=${JELLYFIN_VERSION:1}" >> $GITHUB_ENV
+          GIT_HASH=$(git rev-parse --short HEAD)
+          echo "GIT_HASH=${GIT_HASH}" >> $GITHUB_ENV
 
       - name: Decode Keystore File
         run: echo "${{ secrets.KEYSTORE }}" | base64 -d > $GITHUB_WORKSPACE/key.keystore
@@ -81,9 +84,17 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.JELLYFIN_VERSION }}
-          name: v${{ env.JELLYFIN_VERSION }}
+          tag_name: ${{ env.JELLYFIN_VERSION }}-${{ env.GIT_HASH }}
+          name: v${{ env.JELLYFIN_VERSION }}-${{ env.GIT_HASH }}
           files: app/build/outputs/apk/release/*.apk
+
+      - name: Upload package to Discord
+        uses: sinshutu/upload-to-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          args: |
+            app/build/outputs/apk/release/jellyfin-androidtv-v${{ env.JELLYFIN_VERSION }}-${{ env.GIT_HASH }}-release.apk
 
       - name: Purge build cache
         continue-on-error: true

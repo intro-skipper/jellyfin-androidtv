@@ -18,7 +18,7 @@
 2. Open the project in Android Studio and run it from there or build an APK directly through Gradle:
 
    ```sh
-   ./gradlew assembleDebug
+   ./gradlew assembleRelease
    ```
    
    Add the Android SDK to your PATH environment variable or create the ANDROID_SDK_ROOT variable for
@@ -27,7 +27,7 @@
 ### Deploy to device/emulator
 
    ```sh
-   ./gradlew installDebug
+   ./gradlew installRelease
    ```
 
-*You can also replace the "Debug" with "Release" to get an optimized release binary.*
+*Important: This is a modification of the [official jellyfin client](https://github.com/jellyfin/jellyfin-androidtv) that adds experimental support for the intro-skipper plugin in 10.9 and is not intended as a long-term replacement.*
