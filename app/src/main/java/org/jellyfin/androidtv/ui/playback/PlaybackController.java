@@ -630,14 +630,14 @@ public class PlaybackController implements PlaybackControllerNotifiable {
         }
 
         // set playback speed to user selection, or 1 if we're watching live-tv
-        if (mVideoManager != null)
-            mVideoManager.setPlaybackSpeed(isLiveTv() ? 1.0f : mRequestedPlaybackSpeed);
-
-        if (mFragment != null) mFragment.updateDisplay();
-        if (mFragment != null) mFragment.onStartItem(item);
-
         if (mVideoManager != null) {
+            mVideoManager.setPlaybackSpeed(isLiveTv() ? 1.0f : mRequestedPlaybackSpeed);
             mVideoManager.setVideoPath(response.getMediaUrl());
+        }
+
+        if (mFragment != null) {
+            mFragment.updateDisplay();
+            mFragment.onStartItem(item);
         }
 
         // Set video start delay
