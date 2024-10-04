@@ -1,4 +1,4 @@
-package org.jellyfin.androidtv.ui.playback.segmentskip
+package org.jellyfin.androidtv.ui.playback.segments
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -37,9 +37,10 @@ class SegmentSkipFragment() : Fragment() {
 	override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 		super.onViewCreated(view, savedInstanceState)
 
-		button = view.findViewById(R.id.skip_segment_button)
-		button.setOnClickListener {
-			buttonClicked()
+		button = view.findViewById<Button>(R.id.skip_segment_button).apply {
+			setOnClickListener {
+				buttonClicked()
+			}
 		}
 	}
 
@@ -50,12 +51,11 @@ class SegmentSkipFragment() : Fragment() {
 	}
 
 	private fun updateButtonText(segment: SegmentModel) {
-		val textResId = when (segment.type) {
+		button.text = when (segment.type) {
 			SegmentType.INTRO -> buttonConfig?.skipButtonIntroText
 			SegmentType.CREDITS -> buttonConfig?.skipButtonEndCreditsText
 			else -> "Skip"
 		}
-		button.setText(textResId)
 	}
 
 	fun handleProgress(currentPosition: Long) {
