@@ -1,9 +1,21 @@
+import com.android.build.gradle.internal.api.BaseVariantOutputImpl
+import java.io.ByteArrayOutputStream
+
 plugins {
 	id("com.android.application")
 	kotlin("android")
 	alias(libs.plugins.kotlin.serialization)
 	alias(libs.plugins.kotlin.compose)
 	alias(libs.plugins.aboutlibraries)
+}
+
+val gitCommitHash: String by lazy {
+	val stdout = ByteArrayOutputStream()
+	rootProject.exec {
+		commandLine("git", "rev-parse", "--verify", "--short", "HEAD")
+		standardOutput = stdout
+	}
+	stdout.toString().trim()
 }
 
 android {
@@ -71,6 +83,11 @@ android {
 
 	testOptions.unitTests.all {
 		it.useJUnitPlatform()
+	}
+
+	this.buildOutputs.all {
+		val variantOutputImpl = this as BaseVariantOutputImpl
+		variantOutputImpl.outputFileName = variantOutputImpl.outputFileName.replace("-release", "-${gitCommitHash}-release")
 	}
 }
 
