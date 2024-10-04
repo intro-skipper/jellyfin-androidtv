@@ -4,7 +4,6 @@ import static org.koin.java.KoinJavaComponent.inject;
 
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.os.Handler;
 import android.view.Display;
 import android.view.WindowManager;
@@ -61,13 +60,13 @@ public class PlaybackController implements PlaybackControllerNotifiable {
     // Frequency to report paused state
     private static final long PROGRESS_REPORTING_PAUSE_INTERVAL = TimeUtils.secondsToMillis(15);
 
-    private Lazy<ApiClient> apiClient = inject(ApiClient.class);
-    private Lazy<PlaybackManager> playbackManager = inject(PlaybackManager.class);
-    private Lazy<UserPreferences> userPreferences = inject(UserPreferences.class);
-    private Lazy<VideoQueueManager> videoQueueManager = inject(VideoQueueManager.class);
-    private Lazy<org.jellyfin.sdk.api.client.ApiClient> api = inject(org.jellyfin.sdk.api.client.ApiClient.class);
-    private Lazy<DataRefreshService> dataRefreshService = inject(DataRefreshService.class);
-    private Lazy<ReportingHelper> reportingHelper = inject(ReportingHelper.class);
+    private final Lazy<ApiClient> apiClient = inject(ApiClient.class);
+    private final Lazy<PlaybackManager> playbackManager = inject(PlaybackManager.class);
+    private final Lazy<UserPreferences> userPreferences = inject(UserPreferences.class);
+    private final Lazy<VideoQueueManager> videoQueueManager = inject(VideoQueueManager.class);
+    private final Lazy<org.jellyfin.sdk.api.client.ApiClient> api = inject(org.jellyfin.sdk.api.client.ApiClient.class);
+    private final Lazy<DataRefreshService> dataRefreshService = inject(DataRefreshService.class);
+    private final Lazy<ReportingHelper> reportingHelper = inject(ReportingHelper.class);
 
     List<BaseItemDto> mItems;
     VideoManager mVideoManager;
@@ -107,13 +106,13 @@ public class PlaybackController implements PlaybackControllerNotifiable {
     private long lastPlaybackError = 0;
 
     private Display.Mode[] mDisplayModes;
-    private RefreshRateSwitchingBehavior refreshRateSwitchingBehavior = RefreshRateSwitchingBehavior.DISABLED;
+    private RefreshRateSwitchingBehavior refreshRateSwitchingBehavior;
 
     public PlaybackController(List<BaseItemDto> items, CustomPlaybackOverlayFragment fragment) {
         this(items, fragment, 0);
     }
 
-    public PlaybackController(List<BaseItemDto> items, CustomPlaybackOverlayFragment fragment, int startIndex) {
+    public PlaybackController(List<BaseItemDto> items, @Nullable CustomPlaybackOverlayFragment fragment, int startIndex) {
         mItems = items;
         mCurrentIndex = 0;
         if (items != null && startIndex > 0 && startIndex < items.size()) {
@@ -259,14 +258,14 @@ public class PlaybackController implements PlaybackControllerNotifiable {
 
         if (playbackRetries < 3) {
             if (mFragment != null)
-                Utils.showToast(mFragment.getContext(), mFragment.getString(R.string.player_error));
+                Utils.showToast(mFragment.requireContext(), R.string.player_error);
             Timber.i("Player error encountered - retrying");
             stop();
             play(mCurrentPosition);
         } else {
             mPlaybackState = PlaybackState.ERROR;
             if (mFragment != null) {
-                Utils.showToast(mFragment.getContext(), mFragment.getString(R.string.too_many_errors));
+                Utils.showToast(mFragment.requireContext(), R.string.too_many_errors);
                 mFragment.closePlayer();
             }
         }
@@ -445,7 +444,7 @@ public class PlaybackController implements PlaybackControllerNotifiable {
 
                 if (item == null) {
                     Timber.d("item is null - aborting play");
-                    Utils.showToast(mFragment.getContext(), mFragment.getString(R.string.msg_cannot_play));
+                    Utils.showToast(mFragment.requireContext(), mFragment.getString(R.string.msg_cannot_play));
                     mFragment.closePlayer();
                     return;
                 }
@@ -453,33 +452,18 @@ public class PlaybackController implements PlaybackControllerNotifiable {
                 // make sure item isn't missing
                 if (item.getLocationType() == LocationType.VIRTUAL) {
                     if (hasNextItem()) {
-                        new AlertDialog.Builder(mFragment.getContext())
+                        new AlertDialog.Builder(mFragment.requireContext())
                                 .setTitle(R.string.episode_missing)
                                 .setMessage(R.string.episode_missing_message)
-                                .setPositiveButton(R.string.lbl_yes, new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
-                                        next();
-                                    }
-                                })
-                                .setNegativeButton(R.string.lbl_no, new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
-                                        mFragment.closePlayer();
-                                    }
-                                })
+                                .setPositiveButton(R.string.lbl_yes, (dialog, which) -> next())
+                                .setNegativeButton(R.string.lbl_no, (dialog, which) -> mFragment.closePlayer())
                                 .create()
                                 .show();
                     } else {
-                        new AlertDialog.Builder(mFragment.getContext())
+                        new AlertDialog.Builder(mFragment.requireContext())
                                 .setTitle(R.string.episode_missing)
                                 .setMessage(R.string.episode_missing_message_2)
-                                .setPositiveButton(R.string.lbl_ok, new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
-                                        mFragment.closePlayer();
-                                    }
-                                })
+                                .setPositiveButton(R.string.lbl_ok, (dialog, which) -> mFragment.closePlayer())
                                 .create()
                                 .show();
                     }
@@ -580,19 +564,19 @@ public class PlaybackController implements PlaybackControllerNotifiable {
             PlaybackException ex = (PlaybackException) exception;
             switch (ex.getErrorCode()) {
                 case NotAllowed:
-                    Utils.showToast(mFragment.getContext(), mFragment.getString(R.string.msg_playback_not_allowed));
+                    Utils.showToast(mFragment.requireContext(), R.string.msg_playback_not_allowed);
                     break;
                 case NoCompatibleStream:
-                    Utils.showToast(mFragment.getContext(), mFragment.getString(R.string.msg_playback_incompatible));
+                    Utils.showToast(mFragment.requireContext(), R.string.msg_playback_incompatible);
                     break;
                 case RateLimitExceeded:
-                    Utils.showToast(mFragment.getContext(), mFragment.getString(R.string.msg_playback_restricted));
+                    Utils.showToast(mFragment.requireContext(), R.string.msg_playback_restricted);
                     break;
             }
         } else {
-            Utils.showToast(mFragment.getContext(), mFragment.getString(R.string.msg_cannot_play));
+            Utils.showToast(mFragment.requireContext(), R.string.msg_cannot_play);
         }
-        if (mFragment != null) mFragment.closePlayer();
+        mFragment.closePlayer();
     }
 
     private void startItem(BaseItemDto item, long position, StreamInfo response) {
@@ -626,7 +610,7 @@ public class PlaybackController implements PlaybackControllerNotifiable {
             mCurrentOptions.setSubtitleStreamIndex(null);
         }
 
-        Long mbPos = position * 10000;
+        long mbPos = position * 10000;
 
         // set refresh rate
         if (refreshRateSwitchingBehavior != RefreshRateSwitchingBehavior.DISABLED) {
@@ -770,13 +754,13 @@ public class PlaybackController implements PlaybackControllerNotifiable {
         org.jellyfin.sdk.model.api.MediaStream stream = StreamHelper.getMediaStream(getCurrentMediaSource(), index);
         if (stream == null) {
             if (mFragment != null)
-                Utils.showToast(mFragment.getContext(), mFragment.getString(R.string.subtitle_error));
+                Utils.showToast(mFragment.requireContext(), R.string.subtitle_error);
             return;
         }
         SubtitleStreamInfo streamInfo = getSubtitleStreamInfo(index);
         if (streamInfo == null) {
             if (mFragment != null)
-                Utils.showToast(mFragment.getContext(), mFragment.getString(R.string.msg_unable_load_subs));
+                Utils.showToast(mFragment.requireContext(), R.string.msg_unable_load_subs);
             return;
         }
 
@@ -785,7 +769,7 @@ public class PlaybackController implements PlaybackControllerNotifiable {
         if (burningSubs || streamInfo.getDeliveryMethod() == SubtitleDeliveryMethod.Encode) {
             stop();
             if (mFragment != null && streamInfo.getDeliveryMethod() == SubtitleDeliveryMethod.Encode)
-                Utils.showToast(mFragment.getContext(), mFragment.getString(R.string.msg_burn_sub_warning));
+                Utils.showToast(mFragment.requireContext(), R.string.msg_burn_sub_warning);
             play(mCurrentPosition, index);
             return;
         }
@@ -798,7 +782,7 @@ public class PlaybackController implements PlaybackControllerNotifiable {
                 if (!mVideoManager.setExoPlayerTrack(index, MediaStreamType.SUBTITLE, getCurrentlyPlayingItem().getMediaStreams())) {
                     // error selecting internal subs
                     if (mFragment != null)
-                        Utils.showToast(mFragment.getContext(), mFragment.getString(R.string.msg_unable_load_subs));
+                        Utils.showToast(mFragment.requireContext(), R.string.msg_unable_load_subs);
                 } else {
                     mCurrentOptions.setSubtitleStreamIndex(index);
                     mDefaultSubIndex = index;
@@ -894,7 +878,7 @@ public class PlaybackController implements PlaybackControllerNotifiable {
             mPlaybackState = PlaybackState.IDLE;
 
             if (mVideoManager != null && mVideoManager.isPlaying()) mVideoManager.stopPlayback();
-            Long mbPos = mCurrentPosition * 10000;
+            long mbPos = mCurrentPosition * 10000;
             reportingHelper.getValue().reportStopped(getCurrentlyPlayingItem(), getCurrentStreamInfo(), mbPos);
             clearPlaybackSessionOptions();
         }
@@ -951,7 +935,7 @@ public class PlaybackController implements PlaybackControllerNotifiable {
 
     public void prev() {
         Timber.d("Prev called.");
-        if (mCurrentIndex > 0 && mItems.size() > 0) {
+        if (mCurrentIndex > 0 && !mItems.isEmpty()) {
             stop();
             resetPlayerErrors();
             mCurrentIndex--;
@@ -1016,7 +1000,7 @@ public class PlaybackController implements PlaybackControllerNotifiable {
                 @Override
                 public void onError(Exception exception) {
                     if (mFragment != null)
-                        Utils.showToast(mFragment.getContext(), R.string.msg_video_playback_error);
+                        Utils.showToast(mFragment.requireContext(), R.string.msg_video_playback_error);
                     Timber.e(exception, "Error trying to seek transcoded stream");
                     // call stop so playback can be retried by the user
                     stop();
@@ -1031,7 +1015,7 @@ public class PlaybackController implements PlaybackControllerNotifiable {
             mPlaybackState = PlaybackState.SEEKING;
             if (mVideoManager.seekTo(pos) < 0) {
                 if (mFragment != null)
-                    Utils.showToast(mFragment.getContext(), mFragment.getString(R.string.seek_error));
+                    Utils.showToast(mFragment.requireContext(), R.string.seek_error);
                 pause();
             } else {
                 mVideoManager.play();
@@ -1227,17 +1211,22 @@ public class PlaybackController implements PlaybackControllerNotifiable {
             }
 
             // select an audio track
-            int eligibleAudioTrack = mDefaultAudioIndex;
-
-            // if track switching is done without rebuilding the stream, mCurrentOptions is updated
-            // otherwise, use the server default
-            if (mCurrentOptions.getAudioStreamIndex() != null) {
-                eligibleAudioTrack = mCurrentOptions.getAudioStreamIndex();
-            } else if (getCurrentMediaSource().getDefaultAudioStreamIndex() != null) {
-                eligibleAudioTrack = getCurrentMediaSource().getDefaultAudioStreamIndex();
-            }
+            int eligibleAudioTrack = getEligibleAudioTrack();
             switchAudioStream(eligibleAudioTrack);
         }
+    }
+
+    private int getEligibleAudioTrack() {
+        int eligibleAudioTrack = mDefaultAudioIndex;
+
+        // if track switching is done without rebuilding the stream, mCurrentOptions is updated
+        // otherwise, use the server default
+        if (mCurrentOptions.getAudioStreamIndex() != null) {
+            eligibleAudioTrack = mCurrentOptions.getAudioStreamIndex();
+        } else if (getCurrentMediaSource().getDefaultAudioStreamIndex() != null) {
+            eligibleAudioTrack = getCurrentMediaSource().getDefaultAudioStreamIndex();
+        }
+        return eligibleAudioTrack;
     }
 
     @Override
@@ -1248,7 +1237,7 @@ public class PlaybackController implements PlaybackControllerNotifiable {
         }
 
         if (isLiveTv && directStreamLiveTv) {
-            Utils.showToast(mFragment.getContext(), mFragment.getString(R.string.msg_error_live_stream));
+            Utils.showToast(mFragment.requireContext(), R.string.msg_error_live_stream);
             directStreamLiveTv = false;
         } else {
             String msg = mFragment.getString(R.string.video_error_unknown_error);
