@@ -1,4 +1,4 @@
-<h1 align="center">Jellyfin Android TV</h1>
+<h1 align="center">Jellyfin Android TV with skip button</h1>
 
 ## Build Process
 
