@@ -7,7 +7,6 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.Color;
 import android.media.AudioManager;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -87,6 +86,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 
 import kotlin.Lazy;
 import kotlin.coroutines.Continuation;
@@ -801,116 +801,110 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
                 if (!getActive()) return;
 
                 Timber.d("*** Programs response");
-                if (mDisplayProgramsTask != null) mDisplayProgramsTask.cancel(true);
-                mDisplayProgramsTask = new DisplayProgramsTask(self);
+
+                if (mDisplayProgramsTask != null && mDisplayProgramsTask.getJob() != null)
+                    mDisplayProgramsTask.getJob().cancel(new CancellationException());
+                mDisplayProgramsTask = new AsyncTaskCoroutine<Integer>() {
+                    private View firstRow;
+                    private int displayedChannels = 0;
+
+                    @Override
+                    public void onPreExecute() {
+                        Timber.d("*** Display programs pre-execute");
+                        tvGuideBinding.channels.removeAllViews();
+                        tvGuideBinding.programRows.removeAllViews();
+                        mFirstFocusChannelId = playbackControllerContainer.getValue().getPlaybackController().getCurrentlyPlayingItem().getId();
+
+                        if (mCurrentDisplayChannelStartNdx > 0) {
+                            // Show a paging row for channels above
+                            int pageUpStart = mCurrentDisplayChannelStartNdx - PAGE_SIZE;
+                            if (pageUpStart < 0) pageUpStart = 0;
+
+                            TextView placeHolder = new TextView(requireContext());
+                            placeHolder.setHeight(Utils.convertDpToPixel(requireContext(), LiveTvGuideFragment.GUIDE_ROW_HEIGHT_DP));
+                            tvGuideBinding.channels.addView(placeHolder);
+                            displayedChannels = 0;
+
+                            String label = TextUtilsKt.getLoadChannelsLabel(requireContext(), mAllChannels.get(pageUpStart).getNumber(), mAllChannels.get(mCurrentDisplayChannelStartNdx - 1).getNumber());
+                            tvGuideBinding.programRows.addView(new GuidePagingButton(requireContext(), guide, pageUpStart, label));
+                        }
+                    }
+
+                    @Override
+                    public void doInBackground(Integer... params) {
+                        int start = params[0];
+                        int end = params[1];
+
+                        boolean first = true;
+
+                        Timber.d("*** About to iterate programs");
+                        LinearLayout prevRow = null;
+                        for (int i = start; i <= end; i++) {
+                            if (getJob() == null || getJob().isCancelled()) return;
+                            final BaseItemDto channel = TvManager.getChannel(i);
+                            List<BaseItemDto> programs = TvManager.getProgramsForChannel(channel.getId());
+                            final LinearLayout row = getProgramRow(programs, channel.getId());
+                            if (first) {
+                                first = false;
+                                firstRow = row;
+                            }
+
+                            // put focus on the last tuned channel
+                            if (channel.getId().toString().equals(mFirstFocusChannelId.toString())) {
+                                firstRow = row;
+                                mFirstFocusChannelId = null; // only do this first time in not while paging around
+                            }
+
+                            // set focus parameters if we are not on first row
+                            // this makes focus movements more predictable for the grid view
+                            if (prevRow != null) {
+                                TvManager.setFocusParms(row, prevRow, true);
+                                TvManager.setFocusParms(prevRow, row, false);
+                            }
+                            prevRow = row;
+
+                            requireActivity().runOnUiThread(() -> {
+                                GuideChannelHeader header = getChannelHeader(requireContext(), channel);
+                                tvGuideBinding.channels.addView(header);
+                                header.loadImage();
+                                tvGuideBinding.programRows.addView(row);
+                            });
+
+                            displayedChannels++;
+                        }
+                    }
+
+                    @Override
+                    public void onPostExecute() {
+                        Timber.d("*** Display programs post execute");
+                        if (mCurrentDisplayChannelEndNdx < mAllChannels.size() - 1) {
+                            // Show a paging row for channels below
+                            int pageDnEnd = mCurrentDisplayChannelEndNdx + PAGE_SIZE;
+                            if (pageDnEnd >= mAllChannels.size()) pageDnEnd = mAllChannels.size() - 1;
+
+                            TextView placeHolder = new TextView(requireContext());
+                            placeHolder.setHeight(Utils.convertDpToPixel(requireContext(), LiveTvGuideFragment.GUIDE_ROW_HEIGHT_DP));
+                            tvGuideBinding.channels.addView(placeHolder);
+
+                            String label = TextUtilsKt.getLoadChannelsLabel(requireContext(), mAllChannels.get(mCurrentDisplayChannelEndNdx + 1).getNumber(), mAllChannels.get(pageDnEnd).getNumber());
+                            tvGuideBinding.programRows.addView(new GuidePagingButton(requireContext(), guide, mCurrentDisplayChannelEndNdx + 1, label));
+                        }
+
+                        tvGuideBinding.channelsStatus.setText(getResources().getString(R.string.lbl_tv_channel_status, displayedChannels, mAllChannels.size()));
+                        tvGuideBinding.filterStatus.setText(getResources().getString(R.string.lbl_tv_filter_status, GUIDE_HOURS));
+
+                        tvGuideBinding.spinner.setVisibility(View.GONE);
+
+                        if (firstRow != null) firstRow.requestFocus();
+                    }
+                };
+
                 mDisplayProgramsTask.execute(mCurrentDisplayChannelStartNdx, mCurrentDisplayChannelEndNdx);
             }
         });
     }
 
-    DisplayProgramsTask mDisplayProgramsTask;
-
-    class DisplayProgramsTask extends AsyncTask<Integer, Integer, Void> {
-        private View firstRow;
-        private int displayedChannels = 0;
-        private final LiveTvGuide guide;
-
-        DisplayProgramsTask(LiveTvGuide guide) {
-            super();
-            this.guide = guide;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            Timber.d("*** Display programs pre-execute");
-            tvGuideBinding.channels.removeAllViews();
-            tvGuideBinding.programRows.removeAllViews();
-            mFirstFocusChannelId = playbackControllerContainer.getValue().getPlaybackController().getCurrentlyPlayingItem().getId();
-
-            if (mCurrentDisplayChannelStartNdx > 0) {
-                // Show a paging row for channels above
-                int pageUpStart = mCurrentDisplayChannelStartNdx - PAGE_SIZE;
-                if (pageUpStart < 0) pageUpStart = 0;
-
-                TextView placeHolder = new TextView(requireContext());
-                placeHolder.setHeight(Utils.convertDpToPixel(requireContext(), LiveTvGuideFragment.GUIDE_ROW_HEIGHT_DP));
-                tvGuideBinding.channels.addView(placeHolder);
-                displayedChannels = 0;
-
-                String label = TextUtilsKt.getLoadChannelsLabel(requireContext(), mAllChannels.get(pageUpStart).getNumber(), mAllChannels.get(mCurrentDisplayChannelStartNdx - 1).getNumber());
-                tvGuideBinding.programRows.addView(new GuidePagingButton(requireContext(), guide, pageUpStart, label));
-            }
-        }
-
-        @Override
-        protected Void doInBackground(Integer... params) {
-            int start = params[0];
-            int end = params[1];
-
-            boolean first = true;
-
-            Timber.d("*** About to iterate programs");
-            LinearLayout prevRow = null;
-            for (int i = start; i <= end; i++) {
-                if (isCancelled()) return null;
-                final BaseItemDto channel = TvManager.getChannel(i);
-                List<BaseItemDto> programs = TvManager.getProgramsForChannel(channel.getId());
-                final LinearLayout row = getProgramRow(programs, channel.getId());
-                if (first) {
-                    first = false;
-                    firstRow = row;
-                }
-
-                // put focus on the last tuned channel
-                if (channel.getId().toString().equals(mFirstFocusChannelId.toString())) {
-                    firstRow = row;
-                    mFirstFocusChannelId = null; // only do this first time in not while paging around
-                }
-
-                // set focus parameters if we are not on first row
-                // this makes focus movements more predictable for the grid view
-                if (prevRow != null) {
-                    TvManager.setFocusParms(row, prevRow, true);
-                    TvManager.setFocusParms(prevRow, row, false);
-                }
-                prevRow = row;
-
-                requireActivity().runOnUiThread(() -> {
-                    GuideChannelHeader header = getChannelHeader(requireContext(), channel);
-                    tvGuideBinding.channels.addView(header);
-                    header.loadImage();
-                    tvGuideBinding.programRows.addView(row);
-                });
-
-                displayedChannels++;
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            Timber.d("*** Display programs post execute");
-            if (mCurrentDisplayChannelEndNdx < mAllChannels.size() - 1) {
-                // Show a paging row for channels below
-                int pageDnEnd = mCurrentDisplayChannelEndNdx + PAGE_SIZE;
-                if (pageDnEnd >= mAllChannels.size()) pageDnEnd = mAllChannels.size() - 1;
-
-                TextView placeHolder = new TextView(requireContext());
-                placeHolder.setHeight(Utils.convertDpToPixel(requireContext(), LiveTvGuideFragment.GUIDE_ROW_HEIGHT_DP));
-                tvGuideBinding.channels.addView(placeHolder);
-
-                String label = TextUtilsKt.getLoadChannelsLabel(requireContext(), mAllChannels.get(mCurrentDisplayChannelEndNdx + 1).getNumber(), mAllChannels.get(pageDnEnd).getNumber());
-                tvGuideBinding.programRows.addView(new GuidePagingButton(requireContext(), guide, mCurrentDisplayChannelEndNdx + 1, label));
-            }
-
-            tvGuideBinding.channelsStatus.setText(getResources().getString(R.string.lbl_tv_channel_status, displayedChannels, mAllChannels.size()));
-            tvGuideBinding.filterStatus.setText(getResources().getString(R.string.lbl_tv_filter_status, GUIDE_HOURS));
-
-            tvGuideBinding.spinner.setVisibility(View.GONE);
-
-            if (firstRow != null) firstRow.requestFocus();
-        }
-    }
+    AsyncTaskCoroutine<Integer> mDisplayProgramsTask;
 
     private int currentCellId = 0;
 
