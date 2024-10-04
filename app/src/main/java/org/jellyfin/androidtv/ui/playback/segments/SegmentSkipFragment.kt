@@ -46,11 +46,13 @@ class SegmentSkipFragment() : Fragment() {
 
 	private fun buttonClicked() {
 		lastSegment?.let { segment ->
-			if (segment.type == SegmentType.CREDITS && playbackControllerContainer.playbackController?.hasNextItem() == true) {
-				playbackControllerContainer.playbackController?.next()
-			} else {
-				playbackControllerContainer.playbackController?.seek((segment.endTime.millis).toLong())
-			}
+			playbackControllerContainer.playbackController?.let { player ->
+				if (((segment.endTime.millis+180000) >= player.getDuration()) && player.hasNextItem() == true) {
+						player.next()
+					} else {
+						player.seek(segment.endTime.millis)
+					}
+				}
 		}
 	}
 
