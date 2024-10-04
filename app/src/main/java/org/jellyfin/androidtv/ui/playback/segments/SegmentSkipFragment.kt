@@ -15,7 +15,7 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.koin.android.ext.android.inject
 
 val Number.millis
-    get() = this.toFloat() * 1000
+    get() = this.toLong() * 1000L
 
 class SegmentSkipFragment() : Fragment() {
 
