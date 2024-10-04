@@ -77,7 +77,7 @@ class PlaybackRewriteFragment : Fragment() {
 		}
 	}
 
-	override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+	override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
 		return FrameLayout(requireContext()).apply {
 			addView(PlayerSurfaceView(requireContext()).also { view ->
 				view.playbackManager = playbackManager
