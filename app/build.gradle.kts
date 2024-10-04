@@ -15,7 +15,7 @@ android {
 		targetSdk = libs.versions.android.targetSdk.get().toInt()
 
 		// Release version
-		applicationId = "com.brewkunz.jellyfin"
+		applicationId = namespace
 		versionName = project.getVersionName()
 		versionCode = getVersionCode(versionName!!)
 		setProperty("archivesBaseName", "jellyfin-androidtv-v$versionName")
@@ -33,6 +33,7 @@ android {
 
 	buildTypes {
 		val release by getting {
+			applicationIdSuffix = ".iskip"
 			isMinifyEnabled = false
 
 			// Set package names used in various XML files
