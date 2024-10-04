@@ -2,6 +2,7 @@ package org.jellyfin.androidtv.ui.playback;
 
 import static org.koin.java.KoinJavaComponent.inject;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.Color;
@@ -33,9 +34,7 @@ import androidx.leanback.widget.ArrayObjectAdapter;
 import androidx.leanback.widget.HeaderItem;
 import androidx.leanback.widget.ListRow;
 import androidx.leanback.widget.OnItemViewClickedListener;
-import androidx.leanback.widget.Presenter;
 import androidx.leanback.widget.Row;
-import androidx.leanback.widget.RowPresenter;
 import androidx.lifecycle.Lifecycle;
 
 import org.jellyfin.androidtv.R;
@@ -46,12 +45,8 @@ import org.jellyfin.androidtv.databinding.OverlayTvGuideBinding;
 import org.jellyfin.androidtv.databinding.VlcPlayerInterfaceBinding;
 import org.jellyfin.androidtv.ui.GuideChannelHeader;
 import org.jellyfin.androidtv.ui.GuidePagingButton;
-import org.jellyfin.androidtv.ui.HorizontalScrollViewListener;
 import org.jellyfin.androidtv.ui.LiveProgramDetailPopup;
-import org.jellyfin.androidtv.ui.ObservableHorizontalScrollView;
-import org.jellyfin.androidtv.ui.ObservableScrollView;
 import org.jellyfin.androidtv.ui.ProgramGridCell;
-import org.jellyfin.androidtv.ui.ScrollViewListener;
 import org.jellyfin.androidtv.ui.itemhandling.ChapterItemInfoBaseRowItem;
 import org.jellyfin.androidtv.ui.itemhandling.ItemRowAdapter;
 import org.jellyfin.androidtv.ui.livetv.LiveTvGuide;
@@ -61,7 +56,7 @@ import org.jellyfin.androidtv.ui.livetv.TvManager;
 import org.jellyfin.androidtv.ui.navigation.Destinations;
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository;
 import org.jellyfin.androidtv.ui.playback.overlay.LeanbackOverlayFragment;
-import org.jellyfin.androidtv.ui.playback.segmentskip.SegmentSkipFragment;
+import org.jellyfin.androidtv.ui.playback.segments.SegmentSkipFragment;
 import org.jellyfin.androidtv.ui.presentation.CardPresenter;
 import org.jellyfin.androidtv.ui.presentation.ChannelCardPresenter;
 import org.jellyfin.androidtv.ui.presentation.MutableObjectAdapter;
@@ -160,8 +155,8 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
         requireActivity().setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
         mItemsToPlay = videoQueueManager.getValue().getCurrentVideoQueue();
-        if (mItemsToPlay == null || mItemsToPlay.size() == 0) {
-            Utils.showToast(requireContext(), getString(R.string.msg_no_playable_items));
+        if (mItemsToPlay == null || mItemsToPlay.isEmpty()) {
+            Utils.showToast(requireContext(), R.string.msg_no_playable_items);
             closePlayer();
             return;
         }
@@ -181,6 +176,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
         backgroundService.getValue().disable();
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -244,7 +240,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        if (mItemsToPlay == null || mItemsToPlay.size() == 0) return;
+        if (mItemsToPlay == null || mItemsToPlay.isEmpty()) return;
 
         prepareOverlayFragment();
 
@@ -261,19 +257,9 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
         tvGuideBinding.filterStatus.setTextColor(Color.GRAY);
 
         tvGuideBinding.programRows.setFocusable(false);
-        tvGuideBinding.programVScroller.setScrollViewListener(new ScrollViewListener() {
-            @Override
-            public void onScrollChanged(ObservableScrollView scrollView, int x, int y, int oldx, int oldy) {
-                tvGuideBinding.channelScroller.scrollTo(x, y);
-            }
-        });
+        tvGuideBinding.programVScroller.setScrollViewListener((scrollView, x, y, oldx, oldy) -> tvGuideBinding.channelScroller.scrollTo(x, y));
 
-        tvGuideBinding.channelScroller.setScrollViewListener(new ScrollViewListener() {
-            @Override
-            public void onScrollChanged(ObservableScrollView scrollView, int x, int y, int oldx, int oldy) {
-                tvGuideBinding.programVScroller.scrollTo(x, y);
-            }
-        });
+        tvGuideBinding.channelScroller.setScrollViewListener((scrollView, x, y, oldx, oldy) -> tvGuideBinding.programVScroller.scrollTo(x, y));
 
         tvGuideBinding.timelineHScroller.setFocusable(false);
         tvGuideBinding.timelineHScroller.setFocusableInTouchMode(false);
@@ -282,12 +268,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
         tvGuideBinding.channelScroller.setFocusable(false);
         tvGuideBinding.channelScroller.setFocusableInTouchMode(false);
 
-        tvGuideBinding.programHScroller.setScrollViewListener(new HorizontalScrollViewListener() {
-            @Override
-            public void onScrollChanged(ObservableHorizontalScrollView scrollView, int x, int y, int oldx, int oldy) {
-                tvGuideBinding.timelineHScroller.scrollTo(x, y);
-            }
-        });
+        tvGuideBinding.programHScroller.setScrollViewListener((scrollView, x, y, oldx, oldy) -> tvGuideBinding.timelineHScroller.scrollTo(x, y));
         tvGuideBinding.programHScroller.setFocusable(false);
         tvGuideBinding.programHScroller.setFocusableInTouchMode(false);
 
@@ -300,7 +281,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
             return null;
         });
 
-        int startPos = getArguments().getInt("Position", 0);
+        int startPos = getArguments() != null ? getArguments().getInt("Position", 0) : 0;
 
         // start playing
         playbackControllerContainer.getValue().getPlaybackController().play(startPos);
@@ -358,40 +339,33 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
         });
     }
 
-    private AudioManager.OnAudioFocusChangeListener mAudioFocusChanged = new AudioManager.OnAudioFocusChangeListener() {
-        @Override
-        public void onAudioFocusChange(int focusChange) {
-            switch (focusChange) {
-                case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
-                    playbackControllerContainer.getValue().getPlaybackController().pause();
-                    break;
-                case AudioManager.AUDIOFOCUS_LOSS:
-                    // We don't do anything here on purpose
-                    // On the Nexus we get this notification erroneously when first starting up
-                    // and in any instance that we navigate away from our page, we already handle
-                    // stopping video and handing back audio focus
-                    break;
-            }
+    private final AudioManager.OnAudioFocusChangeListener mAudioFocusChanged = focusChange -> {
+        switch (focusChange) {
+            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+                playbackControllerContainer.getValue().getPlaybackController().pause();
+                break;
+            case AudioManager.AUDIOFOCUS_LOSS:
+                // We don't do anything here on purpose
+                // On the Nexus we get this notification erroneously when first starting up
+                // and in any instance that we navigate away from our page, we already handle
+                // stopping video and handing back audio focus
+                break;
         }
     };
 
-    private OnItemViewClickedListener itemViewClickedListener = new OnItemViewClickedListener() {
-        @Override
-        public void onItemClicked(Presenter.ViewHolder itemViewHolder, Object item,
-                                  RowPresenter.ViewHolder rowViewHolder, Row row) {
-            if (item instanceof ChapterItemInfoBaseRowItem) {
-                ChapterItemInfoBaseRowItem rowItem = (ChapterItemInfoBaseRowItem) item;
-                Long start = rowItem.getChapterInfo().getStartPositionTicks() / 10000;
-                playbackControllerContainer.getValue().getPlaybackController().seek(start);
-                hidePopupPanel();
-            } else if (item instanceof BaseItemDto) {
-                hidePopupPanel();
-                switchChannel(((BaseItemDto) item).getId());
-            }
+    private final OnItemViewClickedListener itemViewClickedListener = (itemViewHolder, item, rowViewHolder, row) -> {
+        if (item instanceof ChapterItemInfoBaseRowItem) {
+            ChapterItemInfoBaseRowItem rowItem = (ChapterItemInfoBaseRowItem) item;
+            Long start = rowItem.getChapterInfo().getStartPositionTicks() / 10000;
+            playbackControllerContainer.getValue().getPlaybackController().seek(start);
+            hidePopupPanel();
+        } else if (item instanceof BaseItemDto) {
+            hidePopupPanel();
+            switchChannel(((BaseItemDto) item).getId());
         }
     };
 
-    private OnBackPressedCallback backPressedCallback = new OnBackPressedCallback(true) {
+    private final OnBackPressedCallback backPressedCallback = new OnBackPressedCallback(true) {
         @Override
         public void handleOnBackPressed() {
             if (mPopupPanelVisible) {
@@ -464,7 +438,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
         return false;
     }
 
-    public void refreshFavorite(UUID channelId) {
+    public void refreshFavorite(@NonNull UUID channelId) {
         for (int i = 0; i < tvGuideBinding.channels.getChildCount(); i++) {
             GuideChannelHeader gch = (GuideChannelHeader) tvGuideBinding.channels.getChildAt(i);
             if (gch.getChannel().getId().equals(channelId.toString()))
@@ -472,7 +446,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
         }
     }
 
-    private View.OnKeyListener keyListener = new View.OnKeyListener() {
+    private final View.OnKeyListener keyListener = new View.OnKeyListener() {
         @Override
         public boolean onKey(View v, int keyCode, KeyEvent event) {
             if (event.getAction() == KeyEvent.ACTION_DOWN) {
@@ -611,6 +585,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
         }
     };
 
+    @NonNull
     public LocalDateTime getCurrentLocalStartDate() {
         return mCurrentGuideStart;
     }
@@ -666,7 +641,6 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
         if (mAudioManager.requestAudioFocus(mAudioFocusChanged, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN) != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
             Timber.e("Unable to get audio focus");
             Utils.showToast(requireContext(), R.string.msg_cannot_play_time);
-            return;
         }
     }
 
@@ -848,7 +822,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
                 }
 
                 // put focus on the last tuned channel
-                if (channel.getId().equals(mFirstFocusChannelId.toString())) {
+                if (channel.getId().toString().equals(mFirstFocusChannelId.toString())) {
                     firstRow = row;
                     mFirstFocusChannelId = null; // only do this first time in not while paging around
                 }
@@ -909,17 +883,17 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
         int guideRowWidthPerMinPx = Utils.convertDpToPixel(requireContext(), LiveTvGuideFragment.GUIDE_ROW_WIDTH_PER_MIN_DP);
 
         LinearLayout programRow = new LinearLayout(requireContext());
-        if (programs.size() == 0) {
+        if (programs.isEmpty()) {
 
             int minutes = ((Long) ((mCurrentGuideEnd.toInstant(ZoneOffset.UTC).toEpochMilli() - mCurrentGuideStart.toInstant(ZoneOffset.UTC).toEpochMilli()) / 60000)).intValue();
             int slot = 0;
 
             do {
                 BaseItemDto empty = LiveTvGuideFragmentHelperKt.createNoProgramDataBaseItem(
-                        getContext(),
+                        requireContext(),
                         channelId,
-                        mCurrentGuideStart.plusMinutes(30l * slot),
-                        mCurrentGuideEnd.plusMinutes(30l * (slot + 1))
+                        mCurrentGuideStart.plusMinutes(30L * slot),
+                        mCurrentGuideEnd.plusMinutes(30L * (slot + 1))
                 );
                 ProgramGridCell cell = new ProgramGridCell(requireContext(), this, empty, false);
                 cell.setId(currentCellId++);
@@ -944,7 +918,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
 
             if (start.isAfter(prevEnd)) {
                 BaseItemDto empty = LiveTvGuideFragmentHelperKt.createNoProgramDataBaseItem(
-                        getContext(),
+                        requireContext(),
                         channelId,
                         prevEnd,
                         start
@@ -957,11 +931,11 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
             LocalDateTime end = item.getEndDate() != null ? item.getEndDate() : getCurrentLocalEndDate();
             if (end.isAfter(getCurrentLocalEndDate())) end = getCurrentLocalEndDate();
             prevEnd = end;
-            Long duration = (end.toInstant(ZoneOffset.UTC).toEpochMilli() - start.toInstant(ZoneOffset.UTC).toEpochMilli()) / 60000;
+            long duration = (end.toInstant(ZoneOffset.UTC).toEpochMilli() - start.toInstant(ZoneOffset.UTC).toEpochMilli()) / 60000;
             if (duration > 0) {
                 ProgramGridCell program = new ProgramGridCell(requireContext(), this, item, false);
                 program.setId(currentCellId++);
-                program.setLayoutParams(new ViewGroup.LayoutParams(duration.intValue() * guideRowWidthPerMinPx, guideRowHeightPx));
+                program.setLayoutParams(new ViewGroup.LayoutParams((int) duration * guideRowWidthPerMinPx, guideRowHeightPx));
 
                 if (start == getCurrentLocalStartDate())
                     program.setFirst();
@@ -993,7 +967,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
         LocalDateTime current = mCurrentGuideStart;
         while (current.isBefore(mCurrentGuideEnd)) {
             TextView time = new TextView(requireContext());
-            time.setText(DateTimeExtensionsKt.getTimeFormatter(getContext()).format(current));
+            time.setText(DateTimeExtensionsKt.getTimeFormatter(requireContext()).format(current));
             time.setWidth(interval == 30 ? halfHour : oneHour);
             tvGuideBinding.timeline.addView(time);
             current = current.plusMinutes(interval);
@@ -1002,12 +976,9 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
         }
     }
 
-    private Runnable detailUpdateTask = new Runnable() {
-        @Override
-        public void run() {
-            if (!getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.STARTED)) return;
-            CustomPlaybackOverlayFragmentHelperKt.refreshSelectedProgram(CustomPlaybackOverlayFragment.this);
-        }
+    private final Runnable detailUpdateTask = () -> {
+        if (!getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.STARTED)) return;
+        CustomPlaybackOverlayFragmentHelperKt.refreshSelectedProgram(CustomPlaybackOverlayFragment.this);
     };
 
     void detailUpdateInternal() {
@@ -1074,7 +1045,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
 
     }
 
-    private Animation.AnimationListener hideAnimationListener = new Animation.AnimationListener() {
+    private final Animation.AnimationListener hideAnimationListener = new Animation.AnimationListener() {
         @Override
         public void onAnimationStart(Animation animation) {
         }
@@ -1089,7 +1060,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
         }
     };
 
-    private Animation.AnimationListener showAnimationListener = new Animation.AnimationListener() {
+    private final Animation.AnimationListener showAnimationListener = new Animation.AnimationListener() {
         @Override
         public void onAnimationStart(Animation animation) {
         }
