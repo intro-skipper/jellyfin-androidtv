@@ -33,6 +33,7 @@ android {
 
 	buildTypes {
 		val release by getting {
+			applicationIdSuffix = ".iskip"
 			isMinifyEnabled = false
 
 			// Set package names used in various XML files
