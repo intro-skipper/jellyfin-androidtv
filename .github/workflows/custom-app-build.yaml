@@ -85,6 +85,20 @@ jobs:
           name: v${{ env.JELLYFIN_VERSION }}
           files: app/build/outputs/apk/release/*.apk
 
+      - name: Discord webhook notification
+        shell: bash
+        run: |
+          contentbody=$( jq -nc --arg msg "jellyfin-androidtv **${{ github.sha }}**" '{"content": ($msg)}' )
+          curl -F "payload_json=${contentbody}" ${{ secrets.DISCORD_WEBHOOK }}
+
+      - name: Upload package to Discord
+        uses: sinshutu/upload-to-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          args: |
+            app/build/outputs/apk/release/jellyfin-androidtv-v${{ env.JELLYFIN_VERSION }}-release.apk
+
       - name: Purge build cache
         continue-on-error: true
         uses: MyAlbum/purge-cache@v2
