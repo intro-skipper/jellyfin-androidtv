@@ -762,12 +762,34 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
 
                 if (mDisplayProgramsTask != null && mDisplayProgramsTask.getJob() != null)
                     mDisplayProgramsTask.getJob().cancel(new CancellationException());
-                mDisplayProgramsTask = new AsyncTaskCoroutine<Integer, Boolean>() {
+                mDisplayProgramsTask = new AsyncTaskCoroutine<Integer>() {
                     private View firstRow;
                     private int displayedChannels = 0;
 
                     @Override
-                    public Boolean doInBackground(Integer... params) {
+                    public void onPreExecute() {
+                        Timber.d("*** Display programs pre-execute");
+                        tvGuideBinding.channels.removeAllViews();
+                        tvGuideBinding.programRows.removeAllViews();
+                        mFirstFocusChannelId = playbackControllerContainer.getValue().getPlaybackController().getCurrentlyPlayingItem().getId();
+
+                        if (mCurrentDisplayChannelStartNdx > 0) {
+                            // Show a paging row for channels above
+                            int pageUpStart = mCurrentDisplayChannelStartNdx - PAGE_SIZE;
+                            if (pageUpStart < 0) pageUpStart = 0;
+
+                            TextView placeHolder = new TextView(requireContext());
+                            placeHolder.setHeight(Utils.convertDpToPixel(requireContext(), LiveTvGuideFragment.GUIDE_ROW_HEIGHT_DP));
+                            tvGuideBinding.channels.addView(placeHolder);
+                            displayedChannels = 0;
+
+                            String label = TextUtilsKt.getLoadChannelsLabel(requireContext(), mAllChannels.get(pageUpStart).getNumber(), mAllChannels.get(mCurrentDisplayChannelStartNdx - 1).getNumber());
+                            tvGuideBinding.programRows.addView(new GuidePagingButton(requireContext(), self, pageUpStart, label));
+                        }
+                    }
+
+                    @Override
+                    public void doInBackground(Integer... params) {
                         int start = params[0];
                         int end = params[1];
 
@@ -776,7 +798,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
                         Timber.d("*** About to iterate programs");
                         LinearLayout prevRow = null;
                         for (int i = start; i <= end; i++) {
-                            if (getJob() == null || getJob().isCancelled()) return null;
+                            if (getJob() == null || getJob().isCancelled()) return;
                             final BaseItemDto channel = TvManager.getChannel(i);
                             List<BaseItemDto> programs = TvManager.getProgramsForChannel(channel.getId());
                             final LinearLayout row = getProgramRow(programs, channel.getId());
@@ -808,11 +830,10 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
 
                             displayedChannels++;
                         }
-                        return null;
                     }
 
                     @Override
-                    public void onPostExecute(@Nullable Boolean result) {
+                    public void onPostExecute() {
                         Timber.d("*** Display programs post execute");
                         if (mCurrentDisplayChannelEndNdx < mAllChannels.size() - 1) {
                             // Show a paging row for channels below
@@ -834,28 +855,6 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
 
                         if (firstRow != null) firstRow.requestFocus();
                     }
-
-                    @Override
-                    public void onPreExecute() {
-                        Timber.d("*** Display programs pre-execute");
-                        tvGuideBinding.channels.removeAllViews();
-                        tvGuideBinding.programRows.removeAllViews();
-                        mFirstFocusChannelId = playbackControllerContainer.getValue().getPlaybackController().getCurrentlyPlayingItem().getId();
-
-                        if (mCurrentDisplayChannelStartNdx > 0) {
-                            // Show a paging row for channels above
-                            int pageUpStart = mCurrentDisplayChannelStartNdx - PAGE_SIZE;
-                            if (pageUpStart < 0) pageUpStart = 0;
-
-                            TextView placeHolder = new TextView(requireContext());
-                            placeHolder.setHeight(Utils.convertDpToPixel(requireContext(), LiveTvGuideFragment.GUIDE_ROW_HEIGHT_DP));
-                            tvGuideBinding.channels.addView(placeHolder);
-                            displayedChannels = 0;
-
-                            String label = TextUtilsKt.getLoadChannelsLabel(requireContext(), mAllChannels.get(pageUpStart).getNumber(), mAllChannels.get(mCurrentDisplayChannelStartNdx - 1).getNumber());
-                            tvGuideBinding.programRows.addView(new GuidePagingButton(requireContext(), self, pageUpStart, label));
-                        }
-                    }
                 };
 
                 mDisplayProgramsTask.execute(mCurrentDisplayChannelStartNdx, mCurrentDisplayChannelEndNdx);
@@ -863,7 +862,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
         });
     }
 
-    AsyncTaskCoroutine<Integer, Boolean> mDisplayProgramsTask;
+    AsyncTaskCoroutine<Integer> mDisplayProgramsTask;
 
     private int currentCellId = 0;
 
