@@ -47,7 +47,7 @@ class SegmentSkipFragment() : Fragment() {
 	private fun buttonClicked() {
 		lastSegment?.let { segment ->
 			playbackControllerContainer.playbackController?.let { player ->
-				if (((segment.endTime.millis+180000) >= player.getDuration()) && player.hasNextItem() == true) {
+				if (((segment.endTime.millis+5000) >= player.getDuration()) && player.hasNextItem() == true) {
 						player.next()
 					} else {
 						player.seek(segment.endTime.millis)
