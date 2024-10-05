@@ -2,7 +2,7 @@ name: Intro Skipper Mod
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, preview ]
     paths-ignore:
       - '**/README.md'
       - '.github/ISSUE_TEMPLATE/**'
@@ -72,6 +72,7 @@ jobs:
             org.gradle.unsafe.configuration-cache=true
 
       - name: Purge past releases
+        if: ${{ github.ref_name }} == "master"
         uses: dev-drprasad/delete-older-releases@v0.3.4
         with:
           keep_latest: 1
@@ -79,6 +80,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create GitHub Release
+        if: ${{ github.ref_name }} == "master"
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.JELLYFIN_VERSION }}
@@ -88,7 +90,7 @@ jobs:
       - name: Discord webhook notification
         shell: bash
         run: |
-          contentbody=$( jq -nc --arg msg "jellyfin-androidtv **${{ github.sha }}**" '{"content": ($msg)}' )
+          contentbody=$( jq -nc --arg msg "jellyfin-androidtv [${{ github.ref_name }}] **${{ github.sha }}**" '{"content": ($msg)}' )
           curl -F "payload_json=${contentbody}" ${{ secrets.DISCORD_WEBHOOK }}
 
       - name: Upload package to Discord
