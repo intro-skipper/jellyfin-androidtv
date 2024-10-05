@@ -3,7 +3,7 @@ name: Intro Skipper Mod Test
 on:
   push:
     branches:
-      - 'release-*'
+      - master
   pull_request:
     paths-ignore:
       - '**/README.md'
