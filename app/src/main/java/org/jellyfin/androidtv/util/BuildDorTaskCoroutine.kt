@@ -1,4 +1,4 @@
-package org.jellyfin.androidtv.ui.playback
+package org.jellyfin.androidtv.util
 
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
@@ -10,17 +10,16 @@ import kotlinx.coroutines.launch
 /*
  * https://stackoverflow.com/a/63302963/461982
  */
-abstract class AsyncTaskCoroutine<I> {
+abstract class BuildDorTaskCoroutine<I, O> {
 	var job: Job? = null
-	open fun onPreExecute() {}
+	var result: O? = null
 
-	open fun onPostExecute() {}
-	abstract fun doInBackground(vararg params: I)
+	open fun onPostExecute(result: O?) {}
+	abstract fun doInBackground(vararg params: I): O
 
 	@OptIn(DelicateCoroutinesApi::class)
 	fun <T> execute(vararg input: I) {
 		job = GlobalScope.launch(Dispatchers.Main) {
-			onPreExecute()
 			callAsync(*input)
 		}
 	}
@@ -28,10 +27,10 @@ abstract class AsyncTaskCoroutine<I> {
 	@OptIn(DelicateCoroutinesApi::class)
 	private suspend fun callAsync(vararg input: I) {
 		GlobalScope.async(Dispatchers.IO) {
-			 doInBackground(*input)
+			result = doInBackground(*input)
 		}.await()
 		GlobalScope.launch(Dispatchers.Main) {
-			onPostExecute()
+			onPostExecute(result)
 		}
 	}
 }
