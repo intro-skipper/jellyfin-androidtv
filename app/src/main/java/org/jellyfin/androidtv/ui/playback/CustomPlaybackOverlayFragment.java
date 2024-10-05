@@ -60,6 +60,7 @@ import org.jellyfin.androidtv.ui.presentation.CardPresenter;
 import org.jellyfin.androidtv.ui.presentation.ChannelCardPresenter;
 import org.jellyfin.androidtv.ui.presentation.MutableObjectAdapter;
 import org.jellyfin.androidtv.ui.presentation.PositionableListRowPresenter;
+import org.jellyfin.androidtv.util.AsyncTaskCoroutine;
 import org.jellyfin.androidtv.util.CoroutineUtils;
 import org.jellyfin.androidtv.util.DateTimeExtensionsKt;
 import org.jellyfin.androidtv.util.ImageHelper;
@@ -762,6 +763,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
 
                 if (mDisplayProgramsTask != null && mDisplayProgramsTask.getJob() != null)
                     mDisplayProgramsTask.getJob().cancel(new CancellationException());
+
                 mDisplayProgramsTask = new AsyncTaskCoroutine<Integer>() {
                     private View firstRow;
                     private int displayedChannels = 0;
