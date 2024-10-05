@@ -60,6 +60,7 @@ import org.jellyfin.androidtv.ui.presentation.CardPresenter;
 import org.jellyfin.androidtv.ui.presentation.ChannelCardPresenter;
 import org.jellyfin.androidtv.ui.presentation.MutableObjectAdapter;
 import org.jellyfin.androidtv.ui.presentation.PositionableListRowPresenter;
+import org.jellyfin.androidtv.util.AsyncTaskCoroutine;
 import org.jellyfin.androidtv.util.CoroutineUtils;
 import org.jellyfin.androidtv.util.DateTimeExtensionsKt;
 import org.jellyfin.androidtv.util.ImageHelper;
@@ -764,9 +765,11 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
 
                 if (mDisplayProgramsTask != null && mDisplayProgramsTask.getJob() != null)
                     mDisplayProgramsTask.getJob().cancel(new CancellationException());
+
                 mDisplayProgramsTask = new AsyncTaskCoroutine<Integer>() {
                     private View firstRow;
                     private int displayedChannels = 0;
+                    private final LiveTvGuide guide = self;
 
                     @Override
                     public void onPreExecute() {
@@ -786,7 +789,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
                             displayedChannels = 0;
 
                             String label = TextUtilsKt.getLoadChannelsLabel(requireContext(), mAllChannels.get(pageUpStart).getNumber(), mAllChannels.get(mCurrentDisplayChannelStartNdx - 1).getNumber());
-                            tvGuideBinding.programRows.addView(new GuidePagingButton(requireContext(), self, pageUpStart, label));
+                            tvGuideBinding.programRows.addView(new GuidePagingButton(requireContext(), guide, pageUpStart, label));
                         }
                     }
 
@@ -847,7 +850,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
                             tvGuideBinding.channels.addView(placeHolder);
 
                             String label = TextUtilsKt.getLoadChannelsLabel(requireContext(), mAllChannels.get(mCurrentDisplayChannelEndNdx + 1).getNumber(), mAllChannels.get(pageDnEnd).getNumber());
-                            tvGuideBinding.programRows.addView(new GuidePagingButton(requireContext(), self, mCurrentDisplayChannelEndNdx + 1, label));
+                            tvGuideBinding.programRows.addView(new GuidePagingButton(requireContext(), guide, mCurrentDisplayChannelEndNdx + 1, label));
                         }
 
                         tvGuideBinding.channelsStatus.setText(getResources().getString(R.string.lbl_tv_channel_status, displayedChannels, mAllChannels.size()));
