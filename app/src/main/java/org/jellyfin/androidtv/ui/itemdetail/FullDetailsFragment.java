@@ -5,7 +5,6 @@ import static org.koin.java.KoinJavaComponent.inject;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.graphics.Point;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.DisplayMetrics;
@@ -68,6 +67,7 @@ import org.jellyfin.androidtv.ui.presentation.CustomListRowPresenter;
 import org.jellyfin.androidtv.ui.presentation.InfoCardPresenter;
 import org.jellyfin.androidtv.ui.presentation.MutableObjectAdapter;
 import org.jellyfin.androidtv.ui.presentation.MyDetailsOverviewRowPresenter;
+import org.jellyfin.androidtv.util.BuildDorTaskCoroutine;
 import org.jellyfin.androidtv.util.CoroutineUtils;
 import org.jellyfin.androidtv.util.DateTimeExtensionsKt;
 import org.jellyfin.androidtv.util.ImageHelper;
@@ -99,6 +99,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 import kotlin.Lazy;
@@ -407,84 +408,6 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
 
     }
 
-    private class BuildDorTask extends AsyncTask<BaseItemDto, Integer, MyDetailsOverviewRow> {
-
-        @Override
-        protected MyDetailsOverviewRow doInBackground(BaseItemDto... params) {
-            BaseItemDto item = params[0];
-
-            // Figure image size
-            Double aspect = imageHelper.getValue().getImageAspectRatio(item, false);
-            posterHeight = aspect > 1 ? Utils.convertDpToPixel(requireContext(), 160) : Utils.convertDpToPixel(requireContext(), item.getType() == BaseItemKind.PERSON || item.getType() == BaseItemKind.MUSIC_ARTIST ? 300 : 200);
-
-            mDetailsOverviewRow = new MyDetailsOverviewRow(item);
-
-            String primaryImageUrl = imageHelper.getValue().getLogoImageUrl(mBaseItem, 600, true);
-            if (primaryImageUrl == null) {
-                primaryImageUrl = imageHelper.getValue().getPrimaryImageUrl(mBaseItem, false, null, posterHeight);
-            }
-
-            mDetailsOverviewRow.setSummary(item.getOverview());
-            switch (item.getType()) {
-                case PERSON:
-                case MUSIC_ARTIST:
-                    break;
-                default:
-
-                    BaseItemPerson director = BaseItemExtensionsKt.getFirstPerson(item, PersonKind.DIRECTOR);
-
-                    InfoItem firstRow;
-                    if (item.getType() == BaseItemKind.SERIES) {
-                        firstRow = new InfoItem(
-                                getString(R.string.lbl_seasons),
-                                String.format("%d", Utils.getSafeValue(item.getChildCount(), 0)));
-                    } else {
-                        firstRow = new InfoItem(
-                                getString(R.string.lbl_directed_by),
-                                director != null ? director.getName() : getString(R.string.lbl_bracket_unknown));
-                    }
-                    mDetailsOverviewRow.setInfoItem1(firstRow);
-
-                    if ((item.getRunTimeTicks() != null && item.getRunTimeTicks() > 0) || item.getRunTimeTicks() != null) {
-                        mDetailsOverviewRow.setInfoItem2(new InfoItem(getString(R.string.lbl_runs), getRunTime()));
-                        ClockBehavior clockBehavior = userPreferences.getValue().get(UserPreferences.Companion.getClockBehavior());
-                        if (clockBehavior == ClockBehavior.ALWAYS || clockBehavior == ClockBehavior.IN_MENUS) {
-                            mDetailsOverviewRow.setInfoItem3(new InfoItem(getString(R.string.lbl_ends), getEndTime()));
-                        } else {
-                            mDetailsOverviewRow.setInfoItem3(new InfoItem());
-                        }
-                    } else {
-                        mDetailsOverviewRow.setInfoItem2(new InfoItem());
-                        mDetailsOverviewRow.setInfoItem3(new InfoItem());
-                    }
-
-            }
-
-            mDetailsOverviewRow.setImageDrawable(primaryImageUrl);
-
-            return mDetailsOverviewRow;
-        }
-
-        @Override
-        protected void onPostExecute(MyDetailsOverviewRow detailsOverviewRow) {
-            super.onPostExecute(detailsOverviewRow);
-
-            if (!getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.STARTED)) return;
-
-            ClassPresenterSelector ps = new ClassPresenterSelector();
-            ps.addClassPresenter(MyDetailsOverviewRow.class, mDorPresenter);
-            mListRowPresenter = new CustomListRowPresenter(Utils.convertDpToPixel(requireContext(), 10));
-            ps.addClassPresenter(ListRow.class, mListRowPresenter);
-            mRowsAdapter = new MutableObjectAdapter<Row>(ps);
-            mRowsFragment.setAdapter(mRowsAdapter);
-            mRowsAdapter.add(detailsOverviewRow);
-
-            updateInfo(detailsOverviewRow.getItem());
-            addAdditionalRows(mRowsAdapter);
-
-        }
-    }
-
     public void setBaseItem(BaseItemDto item) {
         if (!getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.STARTED)) return;
 
@@ -501,7 +424,81 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
                         mProgramInfo.getRunTimeTicks()
                 );
             }
-            new BuildDorTask().execute(item);
+            new BuildDorTaskCoroutine<BaseItemDto, MyDetailsOverviewRow>() {
+                @Override
+                public MyDetailsOverviewRow doInBackground(BaseItemDto... params) {
+                    BaseItemDto item = params[0];
+
+                    // Figure image size
+                    double aspect = imageHelper.getValue().getImageAspectRatio(item, false);
+                    posterHeight = aspect > 1 ? Utils.convertDpToPixel(requireContext(), 160) : Utils.convertDpToPixel(requireContext(), item.getType() == BaseItemKind.PERSON || item.getType() == BaseItemKind.MUSIC_ARTIST ? 300 : 200);
+
+                    mDetailsOverviewRow = new MyDetailsOverviewRow(item);
+
+                    String primaryImageUrl = imageHelper.getValue().getLogoImageUrl(mBaseItem, 600, true);
+                    if (primaryImageUrl == null) {
+                        primaryImageUrl = imageHelper.getValue().getPrimaryImageUrl(mBaseItem, false, null, posterHeight);
+                    }
+
+                    mDetailsOverviewRow.setSummary(item.getOverview());
+                    switch (item.getType()) {
+                        case PERSON:
+                        case MUSIC_ARTIST:
+                            break;
+                        default:
+
+                            BaseItemPerson director = BaseItemExtensionsKt.getFirstPerson(item, PersonKind.DIRECTOR);
+
+                            InfoItem firstRow;
+                            if (item.getType() == BaseItemKind.SERIES) {
+                                firstRow = new InfoItem(
+                                        getString(R.string.lbl_seasons),
+                                        String.format(Locale.ROOT, "%d", Utils.getSafeValue(item.getChildCount(), 0)));
+                            } else {
+                                firstRow = new InfoItem(
+                                        getString(R.string.lbl_directed_by),
+                                        director != null ? director.getName() : getString(R.string.lbl_bracket_unknown));
+                            }
+                            mDetailsOverviewRow.setInfoItem1(firstRow);
+
+                            if ((item.getRunTimeTicks() != null && item.getRunTimeTicks() > 0) || item.getRunTimeTicks() != null) {
+                                mDetailsOverviewRow.setInfoItem2(new InfoItem(getString(R.string.lbl_runs), getRunTime()));
+                                ClockBehavior clockBehavior = userPreferences.getValue().get(UserPreferences.Companion.getClockBehavior());
+                                if (clockBehavior == ClockBehavior.ALWAYS || clockBehavior == ClockBehavior.IN_MENUS) {
+                                    mDetailsOverviewRow.setInfoItem3(new InfoItem(getString(R.string.lbl_ends), getEndTime()));
+                                } else {
+                                    mDetailsOverviewRow.setInfoItem3(new InfoItem());
+                                }
+                            } else {
+                                mDetailsOverviewRow.setInfoItem2(new InfoItem());
+                                mDetailsOverviewRow.setInfoItem3(new InfoItem());
+                            }
+
+                    }
+
+                    mDetailsOverviewRow.setImageDrawable(primaryImageUrl);
+
+                    return mDetailsOverviewRow;
+                }
+
+                @Override
+                public void onPostExecute(MyDetailsOverviewRow detailsOverviewRow) {
+                    super.onPostExecute(detailsOverviewRow);
+
+                    if (!getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.STARTED)) return;
+
+                    ClassPresenterSelector ps = new ClassPresenterSelector();
+                    ps.addClassPresenter(MyDetailsOverviewRow.class, mDorPresenter);
+                    mListRowPresenter = new CustomListRowPresenter(Utils.convertDpToPixel(requireContext(), 10));
+                    ps.addClassPresenter(ListRow.class, mListRowPresenter);
+                    mRowsAdapter = new MutableObjectAdapter<Row>(ps);
+                    mRowsFragment.setAdapter(mRowsAdapter);
+                    mRowsAdapter.add(detailsOverviewRow);
+
+                    updateInfo(detailsOverviewRow.getItem());
+                    addAdditionalRows(mRowsAdapter);
+                }
+            }.execute(item);
         }
     }
 
