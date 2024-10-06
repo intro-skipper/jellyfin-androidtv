@@ -42,6 +42,7 @@ import org.jellyfin.androidtv.data.repository.CustomMessageRepository;
 import org.jellyfin.androidtv.data.service.BackgroundService;
 import org.jellyfin.androidtv.databinding.OverlayTvGuideBinding;
 import org.jellyfin.androidtv.databinding.VlcPlayerInterfaceBinding;
+import org.jellyfin.androidtv.preference.UserPreferences;
 import org.jellyfin.androidtv.ui.GuideChannelHeader;
 import org.jellyfin.androidtv.ui.GuidePagingButton;
 import org.jellyfin.androidtv.ui.LiveProgramDetailPopup;
@@ -73,6 +74,7 @@ import org.jellyfin.androidtv.util.sdk.BaseItemExtensionsKt;
 import org.jellyfin.sdk.model.api.BaseItemDto;
 import org.jellyfin.sdk.model.api.BaseItemKind;
 import org.jellyfin.sdk.model.api.ChapterInfo;
+import org.koin.java.KoinJavaComponent;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -139,6 +141,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
 
     private final PlaybackOverlayFragmentHelper helper = new PlaybackOverlayFragmentHelper(this);
 
+    private final UserPreferences userPreferences = KoinJavaComponent.get(UserPreferences.class);
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -227,6 +230,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
         }
 
         initSegmentSkip();
+
     }
 
     @Override
@@ -1240,7 +1244,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
     }
 
     private void initSegmentSkip() {
-        mSegmentSkipFragment = new SegmentSkipFragment();
+        mSegmentSkipFragment = new SegmentSkipFragment(userPreferences);
 
         FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
         transaction.add(R.id.container, mSegmentSkipFragment, null);

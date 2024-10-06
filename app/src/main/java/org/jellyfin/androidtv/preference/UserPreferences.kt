@@ -10,6 +10,7 @@ import org.jellyfin.androidtv.preference.constant.NextUpBehavior
 import org.jellyfin.androidtv.preference.constant.RatingType
 import org.jellyfin.androidtv.preference.constant.RefreshRateSwitchingBehavior
 import org.jellyfin.androidtv.preference.constant.WatchedIndicatorBehavior
+import org.jellyfin.androidtv.ui.playback.segments.SegmentSkipType
 import org.jellyfin.preference.booleanPreference
 import org.jellyfin.preference.enumPreference
 import org.jellyfin.preference.floatPreference
@@ -82,7 +83,11 @@ class UserPreferences(context: Context) : SharedPreferenceStore(
 		 */
 		var cinemaModeEnabled = booleanPreference("pref_enable_cinema_mode", true)
 
-		/* Playback - Video */
+		/**
+		 * skip mode
+		 */
+		var skipMode = enumPreference("skip_mode", SegmentSkipType.ShowButton)
+
 		/**
 		 * Whether to use an external playback application or not.
 		 */

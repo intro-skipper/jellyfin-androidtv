@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import androidx.fragment.app.Fragment
 import org.jellyfin.androidtv.R
+import org.jellyfin.androidtv.preference.UserPreferences
 import org.jellyfin.androidtv.ui.playback.PlaybackControllerContainer
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.get
@@ -17,7 +18,7 @@ import org.koin.android.ext.android.inject
 val Number.millis
     get() = this.toLong() * 1000L
 
-class SegmentSkipFragment() : Fragment() {
+class SegmentSkipFragment(userPreferences: UserPreferences) : Fragment() {
 
 	private val api: ApiClient by inject()
 	private val playbackControllerContainer: PlaybackControllerContainer by inject()
@@ -26,6 +27,8 @@ class SegmentSkipFragment() : Fragment() {
 	private var segments: List<SegmentModel>? = null
 	private var buttonConfig: SegmentButtonConfig? = null
 	private var lastSegment: SegmentModel? = null
+
+	private val skipTypeController = userPreferences
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -68,16 +71,22 @@ class SegmentSkipFragment() : Fragment() {
 		val currentSegment = getCurrentSegment(currentPosition) ?: lastSegment ?: return
 		lastSegment = currentSegment
 
-		val shouldShowButton = buttonConfig?.skipButtonVisible == true &&
+		val shouldPerformSkip = buttonConfig?.skipButtonVisible == true &&
 			currentPosition >= currentSegment.showAt.millis &&
 			currentPosition < currentSegment.hideAt.millis
 
-		if (shouldShowButton && button.visibility != View.VISIBLE) {
+
+
+		if (shouldPerformSkip && button.visibility != View.VISIBLE && skipTypeController[UserPreferences.skipMode] == SegmentSkipType.ShowButton) {
 			button.visibility = View.VISIBLE
 			updateButtonText(currentSegment)
 			button.requestFocus()
-		} else if (!shouldShowButton && button.visibility == View.VISIBLE) {
+		} else if ((!shouldPerformSkip && button.visibility == View.VISIBLE) || (skipTypeController[UserPreferences.skipMode] == SegmentSkipType.Hidden && button.visibility == View.VISIBLE)) {
 			button.visibility = View.GONE
+		}
+
+		if (skipTypeController[UserPreferences.skipMode] == SegmentSkipType.AutoSkip && shouldPerformSkip) {
+			buttonClicked()
 		}
 	}
 
