@@ -7,10 +7,9 @@ import android.widget.PopupMenu
 import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.preference.UserPreferences
 import org.jellyfin.androidtv.ui.playback.PlaybackController
+import org.jellyfin.androidtv.ui.playback.VideoManager
 import org.jellyfin.androidtv.ui.playback.overlay.CustomPlaybackTransportControlGlue
 import org.jellyfin.androidtv.ui.playback.overlay.VideoPlayerAdapter
-import org.jellyfin.androidtv.ui.playback.segments.SegmentSkipType
-import org.jellyfin.androidtv.ui.playback.segments.SkipTypeController
 
 
 class SelectSkipAction(
@@ -18,7 +17,7 @@ class SelectSkipAction(
 	customPlaybackTransportControlGlue: CustomPlaybackTransportControlGlue,
 	userPreferences: UserPreferences
 ) : CustomAction(context, customPlaybackTransportControlGlue) {
-	private val skipTypeController = SkipTypeController(userPreferences[UserPreferences.skipMode], userPreferences)
+	private val preferences = userPreferences
 	init {
 		initializeWithIcon(R.drawable.ic_select_skip)
 	}
@@ -32,16 +31,16 @@ class SelectSkipAction(
 		videoPlayerAdapter.leanbackOverlayFragment.setFading(false)
 		return PopupMenu(context, view, Gravity.END).apply {
 			with(menu) {
-				add(0, 0, 0, "Show Button").apply {
-					isChecked = skipTypeController.currentSkipType == SegmentSkipType.ShowButton
+				add(0, VideoManager.SHOW_SKIP_BUTTON, VideoManager.SHOW_SKIP_BUTTON, context.getString(R.string.lbl_show_skip_button)).apply {
+					isChecked = preferences[UserPreferences.skipMode] == VideoManager.SHOW_SKIP_BUTTON
 				}
 
-				add(0, 1, 1, "Auto Skip").apply {
-					isChecked = skipTypeController.currentSkipType == SegmentSkipType.AutoSkip
+				add(0, VideoManager.AUTO_SKIP, VideoManager.AUTO_SKIP, context.getString(R.string.lbl_auto_skip)).apply {
+					isChecked = preferences[UserPreferences.skipMode] == VideoManager.AUTO_SKIP
 				}
 
-				add(0, 2, 2, "Hidden").apply {
-					isChecked = skipTypeController.currentSkipType == SegmentSkipType.Hidden
+				add(0, VideoManager.HIDE_SKIP_BUTTON, VideoManager.HIDE_SKIP_BUTTON, context.getString(R.string.lbl_hide_skip_button)).apply {
+					isChecked = preferences[UserPreferences.skipMode] == VideoManager.HIDE_SKIP_BUTTON
 				}
 
 				setGroupCheckable(0, true, true)
@@ -49,11 +48,7 @@ class SelectSkipAction(
 
 			setOnDismissListener { videoPlayerAdapter.leanbackOverlayFragment.setFading(true) }
 			setOnMenuItemClickListener { item ->
-				when (item.itemId) {
-					0 -> skipTypeController.setSkipType(SegmentSkipType.ShowButton)
-					1 -> skipTypeController.setSkipType(SegmentSkipType.AutoSkip)
-					2 -> skipTypeController.setSkipType(SegmentSkipType.Hidden)
-				}
+				preferences[UserPreferences.skipMode] = item.itemId
 				true
 			}
 		}.show()

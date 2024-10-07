@@ -9,6 +9,7 @@ import androidx.fragment.app.Fragment
 import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.preference.UserPreferences
 import org.jellyfin.androidtv.ui.playback.PlaybackControllerContainer
+import org.jellyfin.androidtv.ui.playback.VideoManager
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.get
 import org.jellyfin.sdk.model.UUID
@@ -28,7 +29,7 @@ class SegmentSkipFragment(userPreferences: UserPreferences) : Fragment() {
 	private var buttonConfig: SegmentButtonConfig? = null
 	private var lastSegment: SegmentModel? = null
 
-	private val skipTypeController = userPreferences
+	private val preferences = userPreferences
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -75,17 +76,15 @@ class SegmentSkipFragment(userPreferences: UserPreferences) : Fragment() {
 			currentPosition >= currentSegment.showAt.millis &&
 			currentPosition < currentSegment.hideAt.millis
 
-
-
-		if (shouldPerformSkip && button.visibility != View.VISIBLE && skipTypeController[UserPreferences.skipMode] == SegmentSkipType.ShowButton) {
+		if (shouldPerformSkip && button.visibility != View.VISIBLE && preferences[UserPreferences.skipMode] == VideoManager.SHOW_SKIP_BUTTON) {
 			button.visibility = View.VISIBLE
 			updateButtonText(currentSegment)
 			button.requestFocus()
-		} else if ((!shouldPerformSkip && button.visibility == View.VISIBLE) || (skipTypeController[UserPreferences.skipMode] == SegmentSkipType.Hidden && button.visibility == View.VISIBLE)) {
+		} else if (button.visibility == View.VISIBLE && (!shouldPerformSkip || preferences[UserPreferences.skipMode] == VideoManager.HIDE_SKIP_BUTTON)) {
 			button.visibility = View.GONE
 		}
 
-		if (skipTypeController[UserPreferences.skipMode] == SegmentSkipType.AutoSkip && shouldPerformSkip) {
+		if (preferences[UserPreferences.skipMode] == VideoManager.AUTO_SKIP && shouldPerformSkip) {
 			buttonClicked()
 		}
 	}
