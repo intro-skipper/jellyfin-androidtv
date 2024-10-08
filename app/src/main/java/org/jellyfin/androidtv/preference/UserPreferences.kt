@@ -1,6 +1,7 @@
 package org.jellyfin.androidtv.preference
 
 import android.content.Context
+import android.drm.DrmStore
 import android.view.KeyEvent
 import androidx.preference.PreferenceManager
 import org.jellyfin.androidtv.preference.constant.AppTheme

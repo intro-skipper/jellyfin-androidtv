@@ -315,7 +315,7 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
         mEndsText.setText(getContext().getString(R.string.lbl_playback_control_ends, DateTimeExtensionsKt.getTimeFormatter(getContext()).format(endTime)));
     }
 
-    private void notifyActionChanged(Action action) {
+    public void notifyActionChanged(Action action) {
         ArrayObjectAdapter adapter = primaryActionsAdapter;
         if (adapter.indexOf(action) >= 0) {
             adapter.notifyArrayItemRangeChanged(adapter.indexOf(action), 1);
