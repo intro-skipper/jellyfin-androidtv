@@ -561,7 +561,6 @@ public class LiveTvGuideFragment extends Fragment implements LiveTvGuide, View.O
 
                             displayedChannels++;
                         }
-                        return;
                     }
 
                     @Override

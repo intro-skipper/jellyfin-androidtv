@@ -767,6 +767,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
                 mDisplayProgramsTask = new AsyncTaskCoroutine<Integer>() {
                     private View firstRow;
                     private int displayedChannels = 0;
+                    private final LiveTvGuide guide = self;
 
                     @Override
                     public void onPreExecute() {
@@ -786,7 +787,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
                             displayedChannels = 0;
 
                             String label = TextUtilsKt.getLoadChannelsLabel(requireContext(), mAllChannels.get(pageUpStart).getNumber(), mAllChannels.get(mCurrentDisplayChannelStartNdx - 1).getNumber());
-                            tvGuideBinding.programRows.addView(new GuidePagingButton(requireContext(), self, pageUpStart, label));
+                            tvGuideBinding.programRows.addView(new GuidePagingButton(requireContext(), guide, pageUpStart, label));
                         }
                     }
 
@@ -847,7 +848,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
                             tvGuideBinding.channels.addView(placeHolder);
 
                             String label = TextUtilsKt.getLoadChannelsLabel(requireContext(), mAllChannels.get(mCurrentDisplayChannelEndNdx + 1).getNumber(), mAllChannels.get(pageDnEnd).getNumber());
-                            tvGuideBinding.programRows.addView(new GuidePagingButton(requireContext(), self, mCurrentDisplayChannelEndNdx + 1, label));
+                            tvGuideBinding.programRows.addView(new GuidePagingButton(requireContext(), guide, mCurrentDisplayChannelEndNdx + 1, label));
                         }
 
                         tvGuideBinding.channelsStatus.setText(getResources().getString(R.string.lbl_tv_channel_status, displayedChannels, mAllChannels.size()));
