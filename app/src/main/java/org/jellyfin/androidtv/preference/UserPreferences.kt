@@ -1,7 +1,6 @@
 package org.jellyfin.androidtv.preference
 
 import android.content.Context
-import android.drm.DrmStore
 import android.view.KeyEvent
 import androidx.preference.PreferenceManager
 import org.jellyfin.androidtv.preference.constant.AppTheme
@@ -11,7 +10,7 @@ import org.jellyfin.androidtv.preference.constant.NextUpBehavior
 import org.jellyfin.androidtv.preference.constant.RatingType
 import org.jellyfin.androidtv.preference.constant.RefreshRateSwitchingBehavior
 import org.jellyfin.androidtv.preference.constant.WatchedIndicatorBehavior
-import org.jellyfin.androidtv.ui.playback.VideoManager
+import org.jellyfin.androidtv.ui.playback.segments.SegmentMode
 import org.jellyfin.preference.booleanPreference
 import org.jellyfin.preference.enumPreference
 import org.jellyfin.preference.floatPreference
@@ -87,7 +86,7 @@ class UserPreferences(context: Context) : SharedPreferenceStore(
 		/**
 		 * skip mode
 		 */
-		var skipMode = intPreference("skip_mode", VideoManager.SHOW_SKIP_BUTTON)
+		var skipMode = enumPreference("skip_mode", SegmentMode.SHOW_SKIP_BUTTON)
 
 		/**
 		 * Whether to use an external playback application or not.

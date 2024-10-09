@@ -9,7 +9,6 @@ import androidx.fragment.app.Fragment
 import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.preference.UserPreferences
 import org.jellyfin.androidtv.ui.playback.PlaybackControllerContainer
-import org.jellyfin.androidtv.ui.playback.VideoManager
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.get
 import org.jellyfin.sdk.model.UUID
@@ -18,6 +17,24 @@ import org.koin.android.ext.android.inject
 
 val Number.millis
     get() = this.toLong() * 1000L
+
+enum class SegmentMode {
+	SHOW_SKIP_BUTTON {
+		override fun icon(): Int = R.drawable.ic_select_skip_show_button
+		override fun label(): Int = R.string.lbl_show_skip_button
+	},
+	AUTO_SKIP {
+		override fun icon(): Int = R.drawable.ic_select_skip_auto_skip
+		override fun label(): Int = R.string.lbl_auto_skip
+	},
+	HIDE_SKIP_BUTTON {
+		override fun icon(): Int = R.drawable.ic_select_skip_hide_button
+		override fun label(): Int = R.string.lbl_hide_skip_button
+	};
+
+	abstract fun icon(): Int
+	abstract fun label(): Int
+}
 
 class SegmentSkipFragment(userPreferences: UserPreferences) : Fragment() {
 
@@ -43,12 +60,12 @@ class SegmentSkipFragment(userPreferences: UserPreferences) : Fragment() {
 
 		button = view.findViewById<Button>(R.id.skip_segment_button).apply {
 			setOnClickListener {
-				buttonClicked()
+				doSkip()
 			}
 		}
 	}
 
-	private fun buttonClicked() {
+	private fun doSkip() {
 		lastSegment?.let { segment ->
 			playbackControllerContainer.playbackController?.let { player ->
 				if ((segment.endTime + 3).millis > player.getDuration() && player.hasNextItem()) {
@@ -76,16 +93,16 @@ class SegmentSkipFragment(userPreferences: UserPreferences) : Fragment() {
 			currentPosition >= currentSegment.showAt.millis &&
 			currentPosition < currentSegment.hideAt.millis
 
-		if (shouldPerformSkip && button.visibility != View.VISIBLE && preferences[UserPreferences.skipMode] == VideoManager.SHOW_SKIP_BUTTON) {
+		if (shouldPerformSkip && button.visibility != View.VISIBLE && preferences[UserPreferences.skipMode] == SegmentMode.SHOW_SKIP_BUTTON) {
 			button.visibility = View.VISIBLE
 			updateButtonText(currentSegment)
 			button.requestFocus()
-		} else if (button.visibility == View.VISIBLE && (!shouldPerformSkip || preferences[UserPreferences.skipMode] == VideoManager.HIDE_SKIP_BUTTON)) {
+		} else if (button.visibility == View.VISIBLE && (!shouldPerformSkip || preferences[UserPreferences.skipMode] == SegmentMode.HIDE_SKIP_BUTTON)) {
 			button.visibility = View.GONE
 		}
 
-		if (preferences[UserPreferences.skipMode] == VideoManager.AUTO_SKIP && shouldPerformSkip) {
-			buttonClicked()
+		if (preferences[UserPreferences.skipMode] == SegmentMode.AUTO_SKIP && shouldPerformSkip) {
+			doSkip()
 		}
 	}
 
