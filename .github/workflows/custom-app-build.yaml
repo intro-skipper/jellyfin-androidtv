@@ -2,7 +2,8 @@ name: Intro Skipper Mod
 
 on:
   push:
-    branches: [ master, preview ]
+    branches:
+      - 'release-*'
     paths-ignore:
       - '**/README.md'
       - '.github/ISSUE_TEMPLATE/**'
