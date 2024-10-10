@@ -49,11 +49,11 @@ class SegmentSkipFragment(userPreferences: UserPreferences) : Fragment() {
 
 	private fun doSkip() {
 		lastSegment?.let { segment ->
-			playbackControllerContainer.playbackController?.let { player ->
-				if ((segment.endTime + 3).millis > player.getDuration() && player.hasNextItem()) {
-					player.next()
+			playbackControllerContainer.playbackController?.run {
+				if ((segment.endTime + 3).millis > getDuration() && hasNextItem()) {
+					next()
 				} else {
-					player.seek(segment.endTime.millis)
+					seek(segment.endTime.millis)
 				}
 			}
 		}

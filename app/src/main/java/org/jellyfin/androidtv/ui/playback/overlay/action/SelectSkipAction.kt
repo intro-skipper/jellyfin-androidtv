@@ -30,14 +30,12 @@ class SelectSkipAction(
 	) {
 		videoPlayerAdapter.leanbackOverlayFragment.setFading(false)
 		PopupMenu(context, view, Gravity.END).apply {
-			with(menu) {
-				SegmentMode.entries.forEach {
-					add(0, it.ordinal, it.ordinal, context.getString(it.label())).apply {
-						isChecked = preferences[UserPreferences.skipMode] == it
-					}
+			SegmentMode.entries.forEach {
+				menu.add(0, it.ordinal, it.ordinal, context.getString(it.label())).apply {
+					isChecked = preferences[UserPreferences.skipMode] == it
 				}
-				setGroupCheckable(0, true, true)
 			}
+			menu.setGroupCheckable(0, true, true)
 
 			setOnDismissListener {
 				videoPlayerAdapter.leanbackOverlayFragment.setFading(true)

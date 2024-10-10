@@ -2,6 +2,7 @@ package org.jellyfin.androidtv.ui.playback.overlay;
 
 import static java.lang.Math.round;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Handler;
 import android.view.KeyEvent;
@@ -45,6 +46,7 @@ import org.jellyfin.androidtv.ui.playback.overlay.action.SelectSkipAction;
 import org.jellyfin.androidtv.ui.playback.overlay.action.SkipNextAction;
 import org.jellyfin.androidtv.ui.playback.overlay.action.SkipPreviousAction;
 import org.jellyfin.androidtv.ui.playback.overlay.action.ZoomAction;
+import org.jellyfin.androidtv.ui.playback.segments.SegmentMode;
 import org.jellyfin.androidtv.util.DateTimeExtensionsKt;
 import org.koin.java.KoinJavaComponent;
 
@@ -132,11 +134,13 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
                 if (showClock == ClockBehavior.ALWAYS || showClock == ClockBehavior.IN_VIDEO) {
                     Context context = parent.getContext();
                     mEndsText = new TextView(context);
+                    //noinspection PrivateResource
                     mEndsText.setTextAppearance(context, androidx.leanback.R.style.Widget_Leanback_PlaybackControlsTimeStyle);
                     setEndTime();
 
                     LinearLayout view = (LinearLayout) vh.view;
 
+                    @SuppressLint("RestrictedApi")
                     PlaybackTransportRowView bar = (PlaybackTransportRowView) view.getChildAt(1);
                     FrameLayout v = (FrameLayout) bar.getChildAt(0);
                     mButtonRef = (LinearLayout) v.getChildAt(0);
@@ -198,8 +202,11 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
         zoomAction = new ZoomAction(context, this);
         zoomAction.setLabels(new String[]{context.getString(R.string.lbl_zoom)});
         selectSkipAction = new SelectSkipAction(context, this, KoinJavaComponent.get(UserPreferences.class));
-        // TODO: Add labels
-        selectSkipAction.setLabels(new String[]{"select_skip_action"});
+        selectSkipAction.setLabels(new String[]{
+                context.getString(SegmentMode.AUTO_SKIP.label()),
+                context.getString(SegmentMode.SHOW_SKIP_BUTTON.label()),
+                context.getString(SegmentMode.HIDE_SKIP_BUTTON.label())
+        });
         chapterAction = new ChapterAction(context, this);
         chapterAction.setLabels(new String[]{context.getString(R.string.lbl_chapters)});
 
