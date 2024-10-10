@@ -5,19 +5,24 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import org.jellyfin.androidtv.R
+import org.jellyfin.androidtv.preference.UserPreferences
 import org.jellyfin.androidtv.ui.playback.PlaybackControllerContainer
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.get
 import org.jellyfin.sdk.model.UUID
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.koin.android.ext.android.inject
+import org.koin.java.KoinJavaComponent.get
 
 val Number.millis
     get() = this.toLong() * 1000L
 
-class SegmentSkipFragment() : Fragment() {
+class SegmentSkipFragment : Fragment() {
+
+	private val preferences = get<UserPreferences>(UserPreferences::class.java)
 
 	private val api: ApiClient by inject()
 	private val playbackControllerContainer: PlaybackControllerContainer by inject()
@@ -39,18 +44,18 @@ class SegmentSkipFragment() : Fragment() {
 
 		button = view.findViewById<Button>(R.id.skip_segment_button).apply {
 			setOnClickListener {
-				buttonClicked()
+				doSkip()
 			}
 		}
 	}
 
-	private fun buttonClicked() {
+	private fun doSkip() {
 		lastSegment?.let { segment ->
-			playbackControllerContainer.playbackController?.let { player ->
-				if ((segment.endTime + 3).millis > player.getDuration() && player.hasNextItem()) {
-					player.next()
+			playbackControllerContainer.playbackController?.run {
+				if ((segment.endTime + 3).millis > getDuration() && hasNextItem()) {
+					next()
 				} else {
-					player.seek(segment.endTime.millis)
+					seek(segment.endTime.millis)
 				}
 			}
 		}
@@ -68,16 +73,19 @@ class SegmentSkipFragment() : Fragment() {
 		val currentSegment = getCurrentSegment(currentPosition) ?: lastSegment ?: return
 		lastSegment = currentSegment
 
-		val shouldShowButton = buttonConfig?.skipButtonVisible == true &&
-			currentPosition >= currentSegment.showAt.millis &&
-			currentPosition < currentSegment.hideAt.millis
+		val isSkipSegment = currentPosition >= currentSegment.showAt.millis && currentPosition < currentSegment.hideAt.millis
 
-		if (shouldShowButton && button.visibility != View.VISIBLE) {
-			button.visibility = View.VISIBLE
+		if (!button.isVisible && isSkipSegment && preferences[UserPreferences.skipMode] == SegmentMode.SHOW_SKIP_BUTTON
+			&& buttonConfig?.skipButtonVisible == true) {
+			button.isVisible = true
 			updateButtonText(currentSegment)
 			button.requestFocus()
-		} else if (!shouldShowButton && button.visibility == View.VISIBLE) {
-			button.visibility = View.GONE
+		} else if (button.isVisible && (!isSkipSegment || preferences[UserPreferences.skipMode] != SegmentMode.SHOW_SKIP_BUTTON)) {
+			button.isVisible = false
+		}
+
+		if (isSkipSegment && preferences[UserPreferences.skipMode] == SegmentMode.AUTO_SKIP) {
+			doSkip()
 		}
 	}
 
