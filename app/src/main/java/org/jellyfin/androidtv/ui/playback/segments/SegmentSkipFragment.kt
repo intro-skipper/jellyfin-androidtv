@@ -71,11 +71,10 @@ class SegmentSkipFragment(userPreferences: UserPreferences) : Fragment() {
 		val currentSegment = getCurrentSegment(currentPosition) ?: lastSegment ?: return
 		lastSegment = currentSegment
 
-		val shouldPerformSkip = buttonConfig?.skipButtonVisible == true &&
-			currentPosition >= currentSegment.showAt.millis &&
+		val shouldPerformSkip = currentPosition >= currentSegment.showAt.millis &&
 			currentPosition < currentSegment.hideAt.millis
 
-		if (shouldPerformSkip && button.visibility != View.VISIBLE && preferences[UserPreferences.skipMode] == SegmentMode.SHOW_SKIP_BUTTON) {
+		if (shouldPerformSkip && button.visibility != View.VISIBLE && preferences[UserPreferences.skipMode] == SegmentMode.SHOW_SKIP_BUTTON && buttonConfig?.skipButtonVisible == true) {
 			button.visibility = View.VISIBLE
 			updateButtonText(currentSegment)
 			button.requestFocus()
