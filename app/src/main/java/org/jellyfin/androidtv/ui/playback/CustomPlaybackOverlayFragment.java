@@ -160,6 +160,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
 
     private final PlaybackOverlayFragmentHelper helper = new PlaybackOverlayFragmentHelper(this);
 
+    private final UserPreferences userPreferences = KoinJavaComponent.get(UserPreferences.class);
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -248,6 +249,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
         }
 
         initSegmentSkip();
+
     }
 
     @Override
@@ -1282,7 +1284,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
     }
 
     private void initSegmentSkip() {
-        mSegmentSkipFragment = new SegmentSkipFragment();
+        mSegmentSkipFragment = new SegmentSkipFragment(userPreferences);
 
         FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
         transaction.add(R.id.container, mSegmentSkipFragment, null);
