@@ -84,7 +84,7 @@ class UserPreferences(context: Context) : SharedPreferenceStore(
 		var cinemaModeEnabled = booleanPreference("pref_enable_cinema_mode", true)
 
 		/**
-		 * Determine how to handle segments(Auto skip, Show skip button, Hide skip button)
+		 * Configure segment handling behavior (Auto skip, Show skip button, Hide skip button).
 		 */
 		var skipMode = enumPreference("skip_mode", SegmentMode.SHOW_SKIP_BUTTON)
 

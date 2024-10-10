@@ -71,8 +71,7 @@ class SegmentSkipFragment(userPreferences: UserPreferences) : Fragment() {
 		val currentSegment = getCurrentSegment(currentPosition) ?: lastSegment ?: return
 		lastSegment = currentSegment
 
-		val shouldPerformSkip = currentPosition >= currentSegment.showAt.millis &&
-			currentPosition < currentSegment.hideAt.millis
+		val shouldPerformSkip = shouldPerformSkip(currentPosition, currentSegment)
 
 		if (shouldPerformSkip && button.visibility != View.VISIBLE && preferences[UserPreferences.skipMode] == SegmentMode.SHOW_SKIP_BUTTON && buttonConfig?.skipButtonVisible == true) {
 			button.visibility = View.VISIBLE
@@ -82,9 +81,13 @@ class SegmentSkipFragment(userPreferences: UserPreferences) : Fragment() {
 			button.visibility = View.GONE
 		}
 
-		if (preferences[UserPreferences.skipMode] == SegmentMode.AUTO_SKIP && shouldPerformSkip) {
+		if (shouldPerformSkip && preferences[UserPreferences.skipMode] == SegmentMode.AUTO_SKIP) {
 			doSkip()
 		}
+	}
+
+	private fun shouldPerformSkip(currentPosition: Long, segment: SegmentModel): Boolean {
+		return currentPosition >= segment.showAt.millis && currentPosition < segment.hideAt.millis
 	}
 
 	suspend fun onStartItem(item: BaseItemDto) {
