@@ -126,7 +126,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
     private boolean mFadeEnabled = false;
     private boolean mIsVisible = false;
     private boolean mPopupPanelVisible = false;
-    public SegmentSkipFragment mSegmentSkipFragment;
+    private SegmentSkipFragment mSegmentSkipFragment;
 
     private LeanbackOverlayFragment leanbackOverlayFragment;
 

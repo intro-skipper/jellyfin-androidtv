@@ -56,11 +56,6 @@ public class VideoManager {
     public final static int ZOOM_AUTO_CROP = 1;
     public final static int ZOOM_STRETCH = 2;
 
-
-    public final static int HIDE_SKIP_BUTTON = 0;
-    public final static int SHOW_SKIP_BUTTON = 1;
-    public final static int AUTO_SKIP = 2;
-
     private int mZoomMode = ZOOM_FIT;
 
     private Activity mActivity;

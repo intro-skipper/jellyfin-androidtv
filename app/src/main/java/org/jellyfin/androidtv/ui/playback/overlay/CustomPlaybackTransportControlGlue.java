@@ -277,9 +277,9 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
         if (!playerAdapter.isLiveTv()) {
             secondaryActionsAdapter.add(playbackSpeedAction);
             secondaryActionsAdapter.add(selectQualityAction);
+            secondaryActionsAdapter.add(selectSkipAction);
         }
 
-        secondaryActionsAdapter.add(selectSkipAction);
         secondaryActionsAdapter.add(zoomAction);
     }
 
@@ -359,7 +359,6 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
         } else {
             mHandler.removeCallbacks(mRefreshEndTime);
         }
-
     }
 
     public void setInjectedViewsVisibility() {

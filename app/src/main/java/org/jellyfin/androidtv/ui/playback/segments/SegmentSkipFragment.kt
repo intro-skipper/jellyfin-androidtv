@@ -18,24 +18,6 @@ import org.koin.android.ext.android.inject
 val Number.millis
     get() = this.toLong() * 1000L
 
-enum class SegmentMode {
-	SHOW_SKIP_BUTTON {
-		override fun icon(): Int = R.drawable.ic_select_skip_show_button
-		override fun label(): Int = R.string.lbl_show_skip_button
-	},
-	AUTO_SKIP {
-		override fun icon(): Int = R.drawable.ic_select_skip_auto_skip
-		override fun label(): Int = R.string.lbl_auto_skip
-	},
-	HIDE_SKIP_BUTTON {
-		override fun icon(): Int = R.drawable.ic_select_skip_hide_button
-		override fun label(): Int = R.string.lbl_hide_skip_button
-	};
-
-	abstract fun icon(): Int
-	abstract fun label(): Int
-}
-
 class SegmentSkipFragment(userPreferences: UserPreferences) : Fragment() {
 
 	private val api: ApiClient by inject()
@@ -97,7 +79,7 @@ class SegmentSkipFragment(userPreferences: UserPreferences) : Fragment() {
 			button.visibility = View.VISIBLE
 			updateButtonText(currentSegment)
 			button.requestFocus()
-		} else if (button.visibility == View.VISIBLE && (!shouldPerformSkip || preferences[UserPreferences.skipMode] == SegmentMode.HIDE_SKIP_BUTTON)) {
+		} else if (button.visibility == View.VISIBLE && (!shouldPerformSkip || preferences[UserPreferences.skipMode] != SegmentMode.SHOW_SKIP_BUTTON)) {
 			button.visibility = View.GONE
 		}
 
