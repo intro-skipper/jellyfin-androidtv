@@ -203,9 +203,9 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
         zoomAction.setLabels(new String[]{context.getString(R.string.lbl_zoom)});
         selectSkipAction = new SelectSkipAction(context, this, KoinJavaComponent.get(UserPreferences.class));
         selectSkipAction.setLabels(new String[]{
-                context.getString(SegmentMode.AUTO_SKIP.label()),
-                context.getString(SegmentMode.SHOW_SKIP_BUTTON.label()),
-                context.getString(SegmentMode.HIDE_SKIP_BUTTON.label())
+                context.getString(SegmentMode.AUTO_SKIP.getNameRes()),
+                context.getString(SegmentMode.SHOW_SKIP_BUTTON.getNameRes()),
+                context.getString(SegmentMode.HIDE_SKIP_BUTTON.getNameRes())
         });
         chapterAction = new ChapterAction(context, this);
         chapterAction.setLabels(new String[]{context.getString(R.string.lbl_chapters)});
