@@ -70,27 +70,36 @@ class SegmentSkipFragment : Fragment() {
 	}
 
 	fun handleProgress(currentPosition: Long) {
+		// Check if server is full auto
+		if (buttonConfig?.autoSkip == true && buttonConfig?.autoSkipCredits == true) {
+			button.isVisible = false
+			return
+		}
+
 		val currentSegment = getCurrentSegment(currentPosition) ?: lastSegment ?: return
 		lastSegment = currentSegment
 
 		val isSkipSegment = currentPosition >= currentSegment.showAt.millis && currentPosition < currentSegment.hideAt.millis
 
-		if (!button.isVisible && isSkipSegment && preferences[UserPreferences.skipMode] == SegmentMode.SHOW_SKIP_BUTTON
-			&& buttonConfig?.skipButtonVisible == true) {
-			button.isVisible = true
-			updateButtonText(currentSegment)
-			button.requestFocus()
-		} else if (button.isVisible && (!isSkipSegment || preferences[UserPreferences.skipMode] != SegmentMode.SHOW_SKIP_BUTTON)) {
-			button.isVisible = false
-		}
-
-		if (isSkipSegment && preferences[UserPreferences.skipMode] == SegmentMode.AUTO_SKIP) {
-			doSkip()
+		preferences[UserPreferences.skipMode].let { setting ->
+			when {
+				isSkipSegment && setting == SegmentMode.AUTO_SKIP -> doSkip()
+				isSkipSegment && setting == SegmentMode.SHOW_SKIP_BUTTON -> {
+					if (!button.isVisible) {
+						button.isVisible = true
+						updateButtonText(currentSegment)
+						button.requestFocus()
+					}
+				}
+				else -> {
+					button.isVisible = false
+				}
+			}
 		}
 	}
 
 	suspend fun onStartItem(item: BaseItemDto) {
-		button.visibility = View.GONE
+		button.isVisible = false
 		segments = getSegments(item.id)
 		buttonConfig = getButtonConfig()
 	}
