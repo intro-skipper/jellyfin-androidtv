@@ -13,11 +13,10 @@ import org.jellyfin.androidtv.ui.playback.segments.SegmentMode
 
 class SelectSkipAction(
 	context: Context,
-	customPlaybackTransportControlGlue: CustomPlaybackTransportControlGlue,
+	val customPlaybackTransportControlGlue: CustomPlaybackTransportControlGlue,
 	userPreferences: UserPreferences
 ) : CustomAction(context, customPlaybackTransportControlGlue) {
 	private val preferences = userPreferences
-	private val customPlaybackTransportControlGlue1 = customPlaybackTransportControlGlue
 
 	private val SegmentMode.icon: Int
 		get() = when (this) {
@@ -53,7 +52,7 @@ class SelectSkipAction(
 				preferences[UserPreferences.skipMode] = SegmentMode.entries[item.itemId]
 
 				initializeWithIcon(preferences[UserPreferences.skipMode].icon)
-				customPlaybackTransportControlGlue1.notifyActionChanged(this@SelectSkipAction)
+				customPlaybackTransportControlGlue.notifyActionChanged(this@SelectSkipAction)
 				true
 			}
 		}.show()

@@ -43,26 +43,25 @@ class SegmentSkipFragment : Fragment() {
 		super.onViewCreated(view, savedInstanceState)
 
 		button = view.findViewById<Button>(R.id.skip_segment_button).apply {
-			setOnClickListener {
-				doSkip()
-			}
+			setOnClickListener { doSkip() }
 		}
 	}
 
-	private fun doSkip() {
+	private fun doSkip(isAuto: Boolean = false) {
 		lastSegment?.let { segment ->
 			playbackControllerContainer.playbackController?.run {
 				if ((segment.endTime + 3).millis > getDuration() && hasNextItem()) {
 					next()
 				} else {
 					seek(segment.endTime.millis)
+					if (isAuto) fragment.hideImmediately()
 				}
 			}
 		}
 	}
 
 	fun handleProgress(currentPosition: Long) {
-		// Check if server is full auto
+		// Check if server is full auto or missing plugin
 		if ((buttonConfig?.autoSkip == true && buttonConfig?.autoSkipCredits == true) || buttonConfig?.skipButtonVisible == null) {
 			button.isVisible = false
 			return
@@ -75,7 +74,7 @@ class SegmentSkipFragment : Fragment() {
 
 		preferences[UserPreferences.skipMode].let { setting ->
 			when {
-				isSkipSegment && setting == SegmentMode.AUTO_SKIP -> doSkip()
+				isSkipSegment && setting == SegmentMode.AUTO_SKIP -> { doSkip(true) }
 				isSkipSegment && setting == SegmentMode.SHOW_SKIP_BUTTON -> {
 					if (!button.isVisible) {
 						button.text = when (currentSegment.type) {
@@ -87,9 +86,7 @@ class SegmentSkipFragment : Fragment() {
 						button.requestFocus()
 					}
 				}
-				else -> {
-					button.isVisible = false
-				}
+				else -> { button.isVisible = false }
 			}
 		}
 	}
