@@ -6,13 +6,13 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class SegmentButtonConfig(
 	@SerialName("SkipButtonIntroText")
-	val skipButtonIntroText: String,
+	val skipButtonIntroText: String? = "Skip Intro",
 	@SerialName("SkipButtonEndCreditsText")
-	val skipButtonEndCreditsText: String,
+	val skipButtonEndCreditsText: String? = "Skip Credits",
 	@SerialName("SkipButtonVisible")
-	val skipButtonVisible: Boolean,
+	val skipButtonVisible: Boolean?,
 	@SerialName("AutoSkip")
-	val autoSkip: Boolean,
+	val autoSkip: Boolean?,
 	@SerialName("AutoSkipCredits")
-	val autoSkipCredits: Boolean
+	val autoSkipCredits: Boolean?
 )
