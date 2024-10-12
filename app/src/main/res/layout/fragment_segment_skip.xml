@@ -14,7 +14,6 @@
         android:layout_marginEnd="56dp"
         android:layout_marginBottom="32.5dp"
         android:elevation="0dp"
-        android:text="Skip"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />

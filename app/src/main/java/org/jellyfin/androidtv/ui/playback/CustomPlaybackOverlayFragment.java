@@ -654,6 +654,14 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
         }
     }
 
+    public void hideImmediately() {
+        if (mIsVisible) {
+            mHandler.removeCallbacks(mHideTask);
+            hide();
+            leanbackOverlayFragment.hideOverlay();
+        }
+    }
+
     private void startFadeTimer() {
         mFadeEnabled = true;
         mHandler.removeCallbacks(mHideTask);
