@@ -61,17 +61,9 @@ class SegmentSkipFragment : Fragment() {
 		}
 	}
 
-	private fun updateButtonText(segment: SegmentModel) {
-		button.text = when (segment.type) {
-			SegmentType.INTRO -> buttonConfig?.skipButtonIntroText
-			SegmentType.CREDITS -> buttonConfig?.skipButtonEndCreditsText
-			else -> "Skip"
-		}
-	}
-
 	fun handleProgress(currentPosition: Long) {
 		// Check if server is full auto
-		if (buttonConfig?.autoSkip == true && buttonConfig?.autoSkipCredits == true) {
+		if ((buttonConfig?.autoSkip == true && buttonConfig?.autoSkipCredits == true) || buttonConfig?.skipButtonVisible == null) {
 			button.isVisible = false
 			return
 		}
@@ -86,8 +78,12 @@ class SegmentSkipFragment : Fragment() {
 				isSkipSegment && setting == SegmentMode.AUTO_SKIP -> doSkip()
 				isSkipSegment && setting == SegmentMode.SHOW_SKIP_BUTTON -> {
 					if (!button.isVisible) {
+						button.text = when (currentSegment.type) {
+							SegmentType.INTRO -> buttonConfig?.skipButtonIntroText
+							SegmentType.CREDITS -> buttonConfig?.skipButtonEndCreditsText
+							else -> "Skip"
+						}
 						button.isVisible = true
-						updateButtonText(currentSegment)
 						button.requestFocus()
 					}
 				}
@@ -111,20 +107,18 @@ class SegmentSkipFragment : Fragment() {
 	}
 
 	private suspend fun getSegments(itemId: UUID): List<SegmentModel> {
-		val segmentsMap = api.get<Map<String, SegmentModel>>(
+		return api.get<Map<String, SegmentModel>>(
 			pathTemplate = "/Episode/{itemId}/IntroSkipperSegments",
 			pathParameters = mapOf("itemId" to itemId),
-		).content
-
-		for ((type, segment) in segmentsMap) {
-			segment.type = when (type) {
-				"Introduction" -> SegmentType.INTRO
-				"Credits" -> SegmentType.CREDITS
-				else -> SegmentType.UNKNOWN
+		).content.apply {
+			for ((type, segment) in this) {
+				segment.type = when (type) {
+					"Introduction" -> SegmentType.INTRO
+					"Credits" -> SegmentType.CREDITS
+					else -> SegmentType.UNKNOWN
+				}
 			}
-		}
-
-		return segmentsMap.values.toList()
+		}.values.toList()
 	}
 
 	private fun getCurrentSegment(currentPosition: Long): SegmentModel? {
