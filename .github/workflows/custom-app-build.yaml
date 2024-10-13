@@ -8,7 +8,9 @@ on:
       - '**/README.md'
       - '.github/ISSUE_TEMPLATE/**'
 
-permissions: write-all
+permissions: 
+  actions: write
+  contents: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
