@@ -45,6 +45,7 @@ jobs:
           owner: jellyfin
           repo: jellyfin-androidtv
           excludes: prerelease, draft
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set JELLYFIN_VERSION and GIT_HASH
         run: |
