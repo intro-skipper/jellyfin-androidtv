@@ -2,6 +2,7 @@ package org.jellyfin.playback.media3.exoplayer
 
 import android.app.ActivityManager
 import android.content.Context
+import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.OptIn
 import androidx.core.content.getSystemService
@@ -169,7 +170,9 @@ class ExoPlayerBackend(
 
 	override fun setSubtitleView(surfaceView: PlayerSubtitleView?) {
 		if (surfaceView != null) {
-			if (subtitleView == null) subtitleView = SubtitleView(surfaceView.context)
+			if (subtitleView == null) subtitleView = SubtitleView(surfaceView.context).apply {
+				textDirection = View.TEXT_DIRECTION_LOCALE
+			}
 			surfaceView.addView(subtitleView)
 		} else {
 			(subtitleView?.parent as? ViewGroup)?.removeView(subtitleView)
