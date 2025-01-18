@@ -44,6 +44,7 @@ android {
 
 	buildTypes {
 		release {
+			applicationIdSuffix = ".iskip"
 			isMinifyEnabled = false
 
 			// Set package names used in various XML files
