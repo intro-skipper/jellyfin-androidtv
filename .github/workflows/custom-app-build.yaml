@@ -82,7 +82,7 @@ jobs:
         uses: dev-drprasad/delete-older-releases@v0.3.4
         with:
           keep_latest: 1
-          delete_tag_pattern: 0.18.4-
+          delete_tag_pattern: ${{ env.JELLYFIN_VERSION }}-
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
