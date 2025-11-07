@@ -1,5 +1,4 @@
 import com.android.build.gradle.internal.api.BaseVariantOutputImpl
-import java.io.ByteArrayOutputStream
 
 plugins {
 	id("com.android.application")
@@ -9,14 +8,14 @@ plugins {
 	alias(libs.plugins.aboutlibraries)
 }
 
-val gitCommitHash: String by lazy {
-	val stdout = ByteArrayOutputStream()
-	rootProject.exec {
-		commandLine("git", "rev-parse", "--verify", "--short", "HEAD")
-		standardOutput = stdout
-	}
-	stdout.toString().trim()
+fun String.execute(): String {
+    val process = ProcessBuilder(*this.split(" ").toTypedArray())
+        .directory(project.rootDir)
+        .redirectErrorStream(true)
+        .start()
+    return process.inputStream.bufferedReader().readText().trim()
 }
+val gitCommitHash = "git rev-parse --verify --short HEAD".execute()
 
 android {
 	namespace = "org.jellyfin.androidtv"
